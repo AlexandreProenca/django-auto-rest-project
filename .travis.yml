@@ -1,0 +1,29 @@
+language: python
+
+python:
+- '3.4'
+- '2.7'
+- pypy
+
+env:
+- $DJANGO='django<1.9'
+
+sudo: false
+
+install:
+- pip install $DJANGO
+- pip install -r requirements.txt
+- pip install coveralls
+- pip freeze
+
+script: python setup.py test
+
+after_success: coveralls
+
+deploy:
+  provider: pypi
+  user: alexandreproenca
+  password:
+    secure: AMjbHI8OQJ5yPrQk/Z+lzO+eNiCXro8EDv73FgoJ8HpxXn3jSJp6RqhTNZpgmOig7zR+41lRX5ol/awxHL6pMMhrQRXVKBbAgC0V9B5iwVigsjTjQRyozuL2SzQDPYHsYMkT4s9qdRAMhqNp4wSRqw73cjlvZjCSxhTQ/tvNAuqde0RPWDN+oX6BcwpOAF4IjD4jujUMceBtDzlrREY8Tnpwf379uhM552RGxbdkyR8v9Ca2EF2HqOrRzZhlB9j59bOviV6rCozWzd+SlwjJhJhaVrkwSu8tLt67Zq8+M2pCYb6pEuIxqWTJjwtD7c8UWhMJ+Q/h+i+qNmzZ2DT6QwyLYilmtr7dVmXOUKBhiK87uXWwH43YUA7pahFwscfVLL5pxeIvPChI1eVaHBhmbasLuE2GYeqduf0S2HXDjJ79dO0CfDCCqa/n02cItNpHTRZXjQLrCr8lzfcUBXsYNNkxKN2ziwkbTNJuSR3C0F0/guDYTTMHBiy4IYu7prC4gbiO763kn4z6kYq6JZVgTEMYoJVg64X2rpVjqzYhB6i7lgtUmQAFTZJix1A6xjEJzFIc/Mo5AA8hJnVokiXch266ssP7UBFAc15BfYeXNo0KpNaE3YxxcNj+cI4VnziaS1RXCRKCOLQ7jg6xgHOpX4L1jxX5CkfMpMHo69GVuFs=
+  on:
+    tags: true
