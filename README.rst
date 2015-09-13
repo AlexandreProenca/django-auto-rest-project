@@ -66,10 +66,15 @@ Installation
 ------------
     Easiest and safe way to install this library is by using pip and virtualenv:
     $ **virtualenv myenv**
+    
     $ **cd myenv**
+    
     $ **source bin/activate**
+    
     $ **mkdir myproject**
+    
     $ **cd myproject**
+    
     $ **pip install django-auto-rest-project**
 
 
@@ -79,12 +84,19 @@ Usage
 
     optional arguments:
     -h, --help                  Show this help message and exit
+    
     -vv VERBOSE, --verbose      VERBOSE Increase verbosity.
+    
     -ip DATABASE_HOST           Host address of the database
+    
     -user DATABASE_USER         Username that have access database
+    
     -database DATABASE_NAME     The name of the database
+    
     -password DATABASE_PASSWORD Password to access the database
+    
     -project PROJECT_NAME       The name of the project.
+    
 
 Exemples:
 
@@ -92,55 +104,71 @@ Exemples:
 
 Project Schema
 ----
+
     |project_name
+    
     ├── core
+    
     │   ├── admin.py
+    
     │   ├── __init__.py
+    
     │   ├── migrations
+    
     │   │   └── __init__.py
+    
     │   ├── models.py
+    
     │   ├── serializers.py
+    
     │   ├── tests.py
+    
     │   ├── urls.py
+    
     │   └── views.py
+    
     ├── manage.py
+    
     └── project_name
+    
         ├── __init__.py
+    
         ├── settings.py
+    
         ├── urls.py
+    
         └── wsgi.py
 
 Packages will be install
 ----
-    cached-property (1.2.0)
-    Django (1.8.4)
-    django-admin-bootstrapped (2.5.5)
-    django-auto-rest-project (0.1.1)
-    django-braces (1.8.1)
-    django-cors-headers (1.1.0)
-    django-drf-file-generator (0.1.0)
-    django-filter (0.11.0)
-    django-jet (0.0.9)
-    django-oauth-toolkit (0.9.0)
-    django-rest-auth (0.5.0)
-    django-rest-swagger (0.3.4)
-    django-url-filter (0.2.0)
-    djangorestframework (3.2.3)
-    enum34 (1.0.4)
-    funcsigs (0.4)
-    Markdown (2.6.2)
-    mock (1.3.0)
-    MySQL-python (1.2.5)
-    oauthlib (1.0.1)
-    pbr (1.7.0)
-    python-memcached (1.57)
-    PyYAML (3.11)
-    setuptools (3.6)
-    simplejson (3.8.0)
-    six (1.9.0)
-    wsgiref (0.1.2)
-    yet-another-django-profiler (1.0.0)
-
+    * cached-property (1.2.0)
+    * Django (1.8.4)
+    * django-admin-bootstrapped (2.5.5)
+    * django-auto-rest-project (0.1.1)
+    * django-braces (1.8.1)
+    * django-cors-headers (1.1.0)
+    * django-drf-file-generator (0.1.0)
+    * django-filter (0.11.0)
+    * django-jet (0.0.9)
+    * django-oauth-toolkit (0.9.0)
+    * django-rest-auth (0.5.0)
+    * django-rest-swagger (0.3.4)
+    * django-url-filter (0.2.0)
+    * djangorestframework (3.2.3)
+    * enum34 (1.0.4)
+    * funcsigs (0.4)
+    * Markdown (2.6.2)
+    * mock (1.3.0)
+    * MySQL-python (1.2.5)
+    * oauthlib (1.0.1)
+    * pbr (1.7.0)
+    * python-memcached (1.57)
+    * PyYAML (3.11)
+    * setuptools (3.6)
+    * simplejson (3.8.0)
+    * six (1.9.0)
+    * wsgiref (0.1.2)
+    * yet-another-django-profiler (1.0.0)
 
 Requirements
 ^^^^^^^^^^^^
