@@ -76,7 +76,7 @@ Exemples:
 
     robot_rest -ip 187.45.196.236 -user nwpartner3 -database partnerdb -project webscrapy -password sdf435*7
 
-###Project Schema
+###Project's Scheme
 
     |project_name
     ├── core
@@ -97,7 +97,7 @@ Exemples:
         └── wsgi.py
 
 
-###Packages will be install
+###Packages that will be installed
 
     cached-property (1.2.0)
     Django (1.8.4)
