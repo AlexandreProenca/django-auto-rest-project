@@ -19,12 +19,12 @@
 [![Badge](https://img.shields.io/badge/english-ok-blue.svg)](https://img.shields.io/badge/english-ok-green.svg" Livechat")
 
 This package aims to facilitate the creation of Django projects with Django Rest Framework, just type database connetions informations and the robot will gives you a Django RESTful project based on your mysql database.
-Ridiculously simple and fast to use, just install the package and type the command like the exemple command below.
+Ridiculously simple and fast to use, just install the package and type the command like the exemple below.
     
 [![Badge](https://img.shields.io/badge/portugues--brasil-ok-green.svg)](https://img.shields.io/badge/portugues--brasil-ok-green.svg" Livechat")
 
 Este pacote tem o objectivo de facilitar a criação de projetos Django + Django Rest Framework, basta apenas digitar os dados de conexão com seu banco de dados e o robo vai criar um projeto Django RESTful baseado no seu banco de dados mysql.
-Ridiculamente fácil de usar, basta instalar o pacote e digitar o comando, como o comando de exemplo abaixo:
+Ridiculamente fácil de usar, basta instalar o pacote e digitar o comando, como no exemplo abaixo:
 
 `$pip install django-auto-rest-project`
 
