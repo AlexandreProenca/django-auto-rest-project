@@ -1,32 +1,25 @@
 # coding: utf-8
-# Extrator de modelos, este programa le o arquivo um arquivo no padrão django models.py, extrai as classes e os
-# campos dos modelos e e opçionalmente pode gera quatro arquivos: urls.py, admin.py, serializers.py e views.py
+# Esse programa tem o objetvo de facilitar a criação de projetos Django + Djangorestframework
 # Autor: Alexandre Proença - linuxloco@gmail.com - alexandre.proenca@hotmail.com.br
-# Floripa Dom 18:11 10/05/2015
+# Floripa Dom 00:52 13/09/2015
 # !/usr/bin/python
-from ConfigParser import RawConfigParser
 from argparse import ArgumentParser
-from pkg_resources import resource_stream, resource_filename
-
+from pkg_resources import resource_filename
 
 import os
 import shutil
 import subprocess
 import sys
 
-
 def main():
     """
-    Method main, set output dir and call a specific function, as given in the options
-    :param argv:
-    :return: None
+    Metodo principal que vai receber os valores passados por linha de comando e manipular a criação de um projeto
+    Django 1.8 + Djangorestframework 3.2, instala uma lista de pacotes predefinidos
+    O metodo vai conectar em uma base de dados e fazer o mapeamento das entidades, transformando-as em objetos do tipo
+    django.db.models, após este mapeamento configura o arquivo settings.py e gera mais quatro arquivos,
+    dentro do app core, admin.py, urls.py, views.py, serializers.py, arquivos ja no padrao para ser usado com
+    djangorestframework.
     """
-    #config = RawConfigParser()
-    #config.readfp(resource_stream('robot_rest','config.ini'))
-
-    #outputdir = config.get('outputdir', 'dir')
-    #os.mkdir(outputdir) if not os.path.exists(outputdir) else outputdir
-
     ap = ArgumentParser()
     ap.add_argument('-vv', '--verbose',
                     default=False,
@@ -38,25 +31,25 @@ def main():
                     dest='database_host',
                     help='Host address of the database')
 
-    ap.add_argument('-u',
+    ap.add_argument('-user',
                     action='store',
                     required=True,
                     dest='database_user',
                     help='Username that have access database')
 
-    ap.add_argument('-b',
+    ap.add_argument('-database',
                     action='store',
                     required=True,
                     dest='database_name',
                     help='The name of the database')
 
-    ap.add_argument('-p',
+    ap.add_argument('-password',
                     action='store',
                     required=True,
                     dest='database_password',
                     help='Password to access the database')
 
-    ap.add_argument('-n',
+    ap.add_argument('-project',
                     action='store',
                     required=True,
                     dest='project_name',
@@ -65,6 +58,8 @@ def main():
     args = ap.parse_args()
 
     if args.database_host:
+
+        #TODO carregar essa lista de um arquivo de configuração
         subprocess.call(["pip", "install", "django", "django-oauth-toolkit", "django-admin-bootstrapped",
                          "django-cors-headers", "python-memcached", "django-filter", "django-rest-auth",
                          "django-rest-swagger", "djangorestframework", "Markdown", "simplejson", "MySQL-python",
@@ -73,7 +68,6 @@ def main():
         subprocess.call(["django-admin", "startproject", args.project_name])
         os.chdir(args.project_name)
         subprocess.call(["django-admin", "startapp", "core"])
-        subprocess.call(['cp', resource_filename('robot_rest', 'settings.tpl'), args.project_name + r'/settings.py'])
         subprocess.call(['cp', resource_filename('robot_rest', 'urls.tpl'), args.project_name + r'/urls.py'])
 
         with open(args.project_name + r'/settings.py', 'wt') as fout:
