@@ -19,13 +19,14 @@
 [![Badge](https://img.shields.io/badge/english-ok-green.svg)](https://img.shields.io/badge/english-ok-green.svg" Livechat")
 
 This package aims to facilitate the creation of Django projects with Django Rest Framework, just type database connetions informations and the robot will gives you a Django RESTful project based on your mysql database.
+Ridiculously simple and fast to use, just install the package and type the command like the exemple command below.
     
 [![Badge](https://img.shields.io/badge/portugues--brasil-ok-green.svg)](https://img.shields.io/badge/portugues--brasil-ok-green.svg" Livechat")
 
 Este pacote tem o objectivo de facilitar a criação de projetos Django + Django Rest Framework, basta apenas digitar os dados de conexão com seu banco de dados e o robo vai criar um projeto Django RESTful baseado no seu banco de dados mysql.
+Ridiculamente fácil de usar, basta instalar o pacote e digitar o comando, como o comando de exemplo abaixo:
 
-
-Ridiculously simple and fast, just type command below
+`$pip install django-auto-rest-project`
 
 `$robot_rest -ip 227.33.126.233 -user punkhard -database banddb -project alsage -password jhhf4`
 
@@ -35,12 +36,12 @@ Jet Interface Djando admin
 
 [![Badge](https://raw.githubusercontent.com/geex-arts/jet/static/screen1.png)](http://readdocs.com" Jet Admin")
 
-Swagger the best to documentate your API
+Swagger the best way to document your API
 
 [![Badge](http://artsy.github.io/images/2013-06-21-adding-api-documentation-with-grape-swagger/swagger-ui.png)](http://readdocs.com" Swagger")
 
 
-###Installation
+###Save Installation
 
     Easiest and safe way to install this library is by using pip and virtualenv:
     
