@@ -1,7 +1,6 @@
 ###Django Auto REST Project
 
 [![Badge](https://travis-ci.org/AlexandreProenca/django-auto-rest-project.svg?branch=master)](https://travis-ci.org/AlexandreProenca/django-auto-rest-project "Travis CI")
-
 [![Badge](https://img.shields.io/pypi/v/django-auto-rest-project.svg)](https://pypi.python.org/pypi/django-auto-rest-project "Pypi")
 [![Badge](https://img.shields.io/pypi/dd/django-auto-rest-project.svg)](https://pypi.python.org/pypi/django-auto-rest-project "Pypi")
 [![Badge](https://img.shields.io/pypi/pyversions/django-auto-rest-project.svg)](https://pypi.python.org/pypi/django-auto-rest-project "Pypi")
@@ -18,9 +17,11 @@
 -----------
 
 [![Badge](https://img.shields.io/badge/english-ok-green.svg)](https://img.shields.io/badge/english-ok-green.svg" Livechat")
+
 This package aims to facilitate the creation of Django projects with Django Rest Framework
 
 [![Badge](https://img.shields.io/badge/portugues--brasil-ok-green.svg)](https://img.shields.io/badge/portugues--brasil-ok-green.svg" Livechat")
+
 Este pacote tem o objectivo de facilitar a criação de projetos Django + Django Rest Framework
 
 
@@ -113,6 +114,14 @@ Exemples:
     wsgiref (0.1.2)
     yet-another-django-profiler (1.0.0)
 
+###Urls that will be created
+    url(r'^jet/', include('jet.urls', 'jet')),
+    url(r'^admin/', include(admin.site.urls)),
+    url(r'^docs/', include('rest_framework_swagger.urls')),
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^', include('core.urls')),
+    
 ###Requirements
     Python 2.7, 3.x, pypy or pypy3
     Django 1.8+ (there are plans to support older Django versions)
