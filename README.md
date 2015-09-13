@@ -32,7 +32,7 @@ Ridiculamente fácil de usar, basta instalar o pacote e digitar o comando, como 
 
 Some packages included
 
-Jet Interface Djando admin
+Modern template for Django admin interface with improved functionality
 
 [![Badge](https://raw.githubusercontent.com/geex-arts/jet/static/screen1.png)](http://readdocs.com" Jet Admin")
 
@@ -41,7 +41,7 @@ Swagger the best way to document your API
 [![Badge](http://artsy.github.io/images/2013-06-21-adding-api-documentation-with-grape-swagger/swagger-ui.png)](http://readdocs.com" Swagger")
 
 
-###Save Installation
+###Safe Installation
 
     Easiest and safe way to install this library is by using pip and virtualenv:
     
