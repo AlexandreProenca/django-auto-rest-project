@@ -18,11 +18,11 @@
 
 [![Badge](https://img.shields.io/badge/english-ok-green.svg)](https://img.shields.io/badge/english-ok-green.svg" Livechat")
 
-This package aims to facilitate the creation of Django projects with Django Rest Framework
+This package aims to facilitate the creation of Django projects with Django Rest Framework, just tape informations to connect in your database and the robot will gives you a Django RESTful project based on your mysql database.
 
 [![Badge](https://img.shields.io/badge/portugues--brasil-ok-green.svg)](https://img.shields.io/badge/portugues--brasil-ok-green.svg" Livechat")
 
-Este pacote tem o objectivo de facilitar a criação de projetos Django + Django Rest Framework
+Este pacote tem o objectivo de facilitar a criação de projetos Django + Django Rest Framework, basta apenas digitar os dados de conexão com seu banco de dados e o robo vai criar um projeto Django RESTful baseado no seu banco de dados mysql.
 
 
     Documentation: http://django-auto-rest-project.readthedocs.org/
