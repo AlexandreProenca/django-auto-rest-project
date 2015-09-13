@@ -16,7 +16,7 @@
 
 -----------
 
-[![Badge](https://img.shields.io/badge/english-ok-green.svg)](https://img.shields.io/badge/english-ok-green.svg" Livechat")
+[![Badge](https://img.shields.io/badge/english-ok-blue.svg)](https://img.shields.io/badge/english-ok-green.svg" Livechat")
 
 This package aims to facilitate the creation of Django projects with Django Rest Framework, just type database connetions informations and the robot will gives you a Django RESTful project based on your mysql database.
 Ridiculously simple and fast to use, just install the package and type the command like the exemple command below.
