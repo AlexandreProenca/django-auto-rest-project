@@ -65,6 +65,7 @@ Este pacote tem o objectivo de facilitar a criação de projetos Django + Django
 Installation
 ------------
     Easiest and safe way to install this library is by using pip and virtualenv:
+    
     $ **virtualenv myenv**
     
     $ **cd myenv**
@@ -83,24 +84,24 @@ Usage
     usage: robot_rest [-h] [-vv VERBOSE] -ip DATABASE_HOST -user DATABASE_USER -database DATABASE_NAME -password DATABASE_PASSWORD -project PROJECT_NAME
 
     optional arguments:
-    -h, --help                  Show this help message and exit
+    **-h, --help**                  Show this help message and exit
     
-    -vv VERBOSE, --verbose      VERBOSE Increase verbosity.
+    **-vv VERBOSE, --verbose**      VERBOSE Increase verbosity.
     
-    -ip DATABASE_HOST           Host address of the database
+    **-ip DATABASE_HOST**           Host address of the database
     
-    -user DATABASE_USER         Username that have access database
+    **-user DATABASE_USER**         Username that have access database
     
-    -database DATABASE_NAME     The name of the database
+    **-database DATABASE_NAME**     The name of the database
     
-    -password DATABASE_PASSWORD Password to access the database
+    **-password DATABASE_PASSWORD** Password to access the database
     
-    -project PROJECT_NAME       The name of the project.
+    **-project PROJECT_NAME**       The name of the project.
     
 
 Exemples:
 
-    robot_rest -ip 187.45.196.236 -user nwpartner3 -database partnerdb -project webscrapy -password sdf435*7
+    `robot_rest -ip 187.45.196.236 -user nwpartner3 -database partnerdb -project webscrapy -password sdf435*7`
 
 Project Schema
 ----
@@ -109,23 +110,21 @@ Project Schema
     
     ├── core
     
-    │   ├── admin.py
+        ├── admin.py
     
-    │   ├── __init__.py
+        ├── __init__.py
     
-    │   ├── migrations
+        ├── migrations
     
-    │   │   └── __init__.py
+        ├── models.py
     
-    │   ├── models.py
+        ├── serializers.py
     
-    │   ├── serializers.py
+        ├── tests.py
     
-    │   ├── tests.py
+        ├── urls.py
     
-    │   ├── urls.py
-    
-    │   └── views.py
+        └── views.py
     
     ├── manage.py
     
