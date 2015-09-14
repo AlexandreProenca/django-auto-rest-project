@@ -1,1 +1,0 @@
-Search.setIndex({envversion:46,filenames:["index"],objects:{},objnames:{},objtypes:{},terms:{"\u00edndice":0,"m\u00f3dulo":0,"p\u00e1gina":0,content:0,pesquisa:0},titles:["Welcome to Django DRF File Generator&#8217;s documentation!"],titleterms:{django:0,document:0,drf:0,file:0,gener:0,indic:0,tabl:0,welcom:0}})
