@@ -129,7 +129,6 @@ Exemples:
     yet-another-django-profiler (1.0.0)
 
 ###Urls that will be created
-    url(r'^jet/', include('jet.urls', 'jet')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
