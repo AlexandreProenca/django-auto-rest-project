@@ -60,7 +60,7 @@ def main():
     if args.database_host:
 
         #TODO carregar essa lista de um arquivo de configuração
-        subprocess.call(["pip", "install", "django", "django-oauth-toolkit", "django-admin-bootstrapped",
+        subprocess.call(["pip", "install", "django==1.8", "django-oauth-toolkit", "django-admin-bootstrapped",
                          "django-cors-headers", "python-memcached", "django-filter", "django-rest-auth",
                          "django-rest-swagger", "djangorestframework", "Markdown", "simplejson", "MySQL-python",
                          "yet-another-django-profiler", "django-jet", "django-url-filter", "django-drf-file-generator"])
