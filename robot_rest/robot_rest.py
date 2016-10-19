@@ -60,10 +60,10 @@ def main():
     if args.database_host:
 
         #TODO carregar essa lista de um arquivo de configuração
-        subprocess.call(["pip", "install", "django==1.8", "django-oauth-toolkit", "django-admin-bootstrapped",
-                         "django-cors-headers", "python-memcached", "django-filter", "django-rest-auth",
+        subprocess.call(["pip", "install", "django", "django-oauth-toolkit","django-admin-bootstrapped",
+                         "django-cors-headers", "django-filter", "django-rest-auth",
                          "django-rest-swagger", "djangorestframework", "Markdown", "simplejson", "MySQL-python",
-                         "yet-another-django-profiler", "django-jet", "django-url-filter", "django-drf-file-generator"])
+                         "django-jet", "django-url-filter", "django-drf-file-generator"])
 
         subprocess.call(["django-admin", "startproject", args.project_name])
         os.chdir(args.project_name)
@@ -90,9 +90,9 @@ def main():
         subprocess.call(['python', 'manage.py', 'migrate'])
         subprocess.call(['python', 'manage.py', 'createsuperuser'])
         models = subprocess.check_output(['python', 'manage.py', 'inspectdb'])
+        with open("core/models.py", "w") as f:
         f = open('core/models.py', 'w')
         [f.write(l) for l in models]
-        f.close()
         subprocess.call(["drf_gen", "-m", "core/models.py", "-A"])
         subprocess.call(["mv", "drf_gem_build/admin.py", "core"])
         subprocess.call(["mv", "drf_gem_build/urls.py", "core"])
