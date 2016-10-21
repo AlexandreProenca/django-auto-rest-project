@@ -6,11 +6,12 @@
 from argparse import ArgumentParser
 from pkg_resources import resource_filename
 import string
-from random import sample, choice
+from random import choice
 import os
 import shutil
 import subprocess
 import sys
+
 
 def main():
     """

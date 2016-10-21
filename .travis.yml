@@ -6,7 +6,7 @@ python:
 - pypy
 
 env:
-- $DJANGO='django<1.9'
+- $DJANGO='django=1.10'
 
 sudo: false
 
