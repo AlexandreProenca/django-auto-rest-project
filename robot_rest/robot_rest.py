@@ -97,11 +97,11 @@ def main():
         with open("core/models.py", "w") as f:
             [f.write(l) for l in models]
         subprocess.call(["drf_gen", "-m", "core/models.py", "-A"])
-        subprocess.call(["mv", "drf_gem_build/admin.py", "core"])
-        subprocess.call(["mv", "drf_gem_build/urls.py", "core"])
-        subprocess.call(["mv", "drf_gem_build/views.py", "core"])
-        subprocess.call(["mv", "drf_gem_build/serializers.py", "core"])
-        shutil.rmtree('drf_gem_build')
+        subprocess.call(["mv", "drf_gen_build/admin.py", "core"])
+        subprocess.call(["mv", "drf_gen_build/urls.py", "core"])
+        subprocess.call(["mv", "drf_gen_build/views.py", "core"])
+        subprocess.call(["mv", "drf_gen_build/serializers.py", "core"])
+        shutil.rmtree('drf_gen_build')
         with open('requirements.txt', 'w') as f:
             requirements = subprocess.check_output(['pip', 'freeze'])
             [f.write(l) for l in requirements]
