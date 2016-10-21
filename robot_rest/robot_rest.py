@@ -5,7 +5,8 @@
 # !/usr/bin/python
 from argparse import ArgumentParser
 from pkg_resources import resource_filename
-
+import string
+from random import sample, choice
 import os
 import shutil
 import subprocess
@@ -60,10 +61,10 @@ def main():
     if args.database_host:
 
         #TODO carregar essa lista de um arquivo de configuração
-        subprocess.call(["pip", "install", "django", "django-oauth-toolkit","django-admin-bootstrapped",
+        subprocess.call(["pip", "install", "django", "django-oauth-toolkit", "django-admin-bootstrapped",
                          "django-cors-headers", "django-filter", "django-rest-auth",
                          "django-rest-swagger", "djangorestframework", "Markdown", "simplejson", "MySQL-python",
-                         "django-jet", "django-url-filter", "django-drf-file-generator"])
+                         "django-url-filter", "django-drf-file-generator"])
 
         subprocess.call(["django-admin", "startproject", args.project_name])
         os.chdir(args.project_name)
@@ -83,6 +84,8 @@ def main():
                         fout.write(line.replace('@PASSWORD@', args.database_password))
                     elif '@NAME@' in line:
                         fout.write(line.replace('@NAME@', args.database_name))
+                    elif '@SECRET@' in line:
+                        fout.write(line.replace('@SECRET@', ''.join([choice(string.letters + string.digits) for _ in range(50)])))
                     else:
                         fout.write(line)
 
@@ -91,17 +94,16 @@ def main():
         subprocess.call(['python', 'manage.py', 'createsuperuser'])
         models = subprocess.check_output(['python', 'manage.py', 'inspectdb'])
         with open("core/models.py", "w") as f:
-        f = open('core/models.py', 'w')
-        [f.write(l) for l in models]
+            [f.write(l) for l in models]
         subprocess.call(["drf_gen", "-m", "core/models.py", "-A"])
         subprocess.call(["mv", "drf_gem_build/admin.py", "core"])
         subprocess.call(["mv", "drf_gem_build/urls.py", "core"])
         subprocess.call(["mv", "drf_gem_build/views.py", "core"])
         subprocess.call(["mv", "drf_gem_build/serializers.py", "core"])
         shutil.rmtree('drf_gem_build')
-        f = open('requirements.txt', 'w')
-        requirements = subprocess.check_output(['pip', 'freeze'])
-        [f.write(l) for l in requirements]
+        with open('requirements.txt', 'w') as f:
+            requirements = subprocess.check_output(['pip', 'freeze'])
+            [f.write(l) for l in requirements]
         sys.exit(0)
 
 if __name__ == "__main__":
