@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from rest_framework_swagger.views import get_swagger_vie
+from rest_framework_swagger.views import get_swagger_view
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
