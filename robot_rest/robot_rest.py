@@ -90,7 +90,6 @@ def main():
                     else:
                         fout.write(line)
 
-        #subprocess.call(['python', 'manage.py', 'createsuperuser'])
         models = subprocess.check_output(['python', 'manage.py', 'inspectdb'])
         with open("core/models.py", "w") as f:
             [f.write(l) for l in models]
@@ -104,8 +103,9 @@ def main():
             requirements = subprocess.check_output(['pip', 'freeze'])
             [f.write(l) for l in requirements]
 
-        subprocess.call(['python', 'manage.py', 'makemigrations'])
         subprocess.call(['python', 'manage.py', 'migrate'])
+        subprocess.call(['python', 'manage.py', 'createsuperuser'])
+        subprocess.call(['python', 'manage.py', 'makemigrations'])
         sys.exit(0)
 
 
