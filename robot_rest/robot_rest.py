@@ -63,7 +63,8 @@ def main():
 
         #TODO carregar essa lista de um arquivo de configuração
         subprocess.call(["pip", "install", "django", "django-oauth-toolkit", "django-admin-bootstrapped",
-                         "django-cors-headers", "django-filter", "django-rest-auth",
+                         "django-cors-headers", "django-filter", "google-api-python-client", "feedparser",
+                         "django-rest-auth", "django-jet",
                          "django-rest-swagger", "djangorestframework", "Markdown", "simplejson", "MySQL-python",
                          "django-url-filter", "django-drf-file-generator"])
 
@@ -106,6 +107,8 @@ def main():
         subprocess.call(['python', 'manage.py', 'makemigrations'])
         subprocess.call(['python', 'manage.py', 'migrate'])
         subprocess.call(['python', 'manage.py', 'createsuperuser'])
+        subprocess.call(['python', 'manage.py', 'collectstatic'])
+
         sys.exit(0)
 
 
