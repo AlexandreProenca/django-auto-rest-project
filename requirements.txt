@@ -1,4 +1,4 @@
-Django==1.8.4
+Django
 pytest==2.7.2
-djangorestframework==3.2.3
+djangorestframework
 django-drf-file-generator
