@@ -92,6 +92,7 @@ def main():
 
         subprocess.call(['cp', pkg_resources.resource_filename('robot_rest', 'urls.tpl'), args.project_name + r'/urls.py'])
         subprocess.call(['cp', '-r', pkg_resources.resource_filename('robot_rest', 'settings'), args.project_name + r'/'])
+        subprocess.call(['cp', '-r', pkg_resources.resource_filename('robot_rest', 'tests'), args.project_name + r'/'])
 
         sed(['defaults', 'dev', 'production', 'tests', '__init__'])
 
@@ -118,7 +119,7 @@ def main():
         subprocess.call(['python', 'manage.py', 'migrate'])
         subprocess.call(['python', 'manage.py', 'createsuperuser'])
         subprocess.call(['python', 'manage.py', 'collectstatic'])
-
+        os.remove(args.project_name + r'/settings.py')
         sys.exit(0)
 
 

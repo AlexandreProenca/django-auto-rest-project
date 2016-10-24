@@ -80,7 +80,17 @@ setup(
 
 
     package_data={
-        'robot_rest': ['*.tpl', '*.txt', 'settings/__init__.tpl', 'settings/defaults.tpl', 'settings/dev.tpl', 'settings/production.tpl', 'settings/tests.tpl'],
+        'robot_rest': ['*.tpl',
+                       '*.txt',
+                       'settings/__init__.tpl',
+                       'settings/defaults.tpl',
+                       'settings/dev.tpl',
+                       'settings/production.tpl',
+                       'settings/tests.tpl',
+                       'tests/__init__.py',
+                       'tests/settingstest.py',
+                       'tests/test_rest_api.py'
+                       ],
     },
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
