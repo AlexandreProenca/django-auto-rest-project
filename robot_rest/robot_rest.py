@@ -61,10 +61,10 @@ def main():
 
     if args.database_host:
 
-        def sed(filenames):
-            for name in filenames:
-                with open(args.project_name + r'/settings/'+name+'.py', 'wt') as fout:
-                    with open(pkg_resources.resource_filename('robot_rest', 'settings/'+name+'.tpl'), 'rt') as fin:
+        def sed(paths):
+            for path in paths:
+                with open(args.project_name + r'/'+path+'.py', 'wt') as fout:
+                    with open(pkg_resources.resource_filename('robot_rest', path+'.tpl'), 'rt') as fin:
                         for line in fin:
                             if '@projeto@' in line:
                                 fout.write(line.replace('@projeto@', args.project_name))
@@ -80,7 +80,7 @@ def main():
                                 fout.write(line.replace('@SECRET@', ''.join([choice(string.letters + string.digits) for _ in range(50)])))
                             else:
                                 fout.write(line)
-                os.remove(args.project_name + r'/settings/'+name+'.tpl')
+                os.remove(args.project_name + r'/'+path+'.tpl')
 
         with open(pkg_resources.resource_filename('robot_rest', 'requirements.txt'), 'rt') as requirements:
             for line in requirements:
@@ -94,7 +94,15 @@ def main():
         subprocess.call(['cp', '-r', pkg_resources.resource_filename('robot_rest', 'settings'), args.project_name + r'/'])
         subprocess.call(['cp', '-r', pkg_resources.resource_filename('robot_rest', 'tests'), args.project_name + r'/'])
 
-        sed(['defaults', 'dev', 'production', 'tests', '__init__'])
+        sed(['settings/defaults',
+             'settings/dev',
+             'settings/production',
+             'settings/tests',
+             'settings/__init__',
+             'tests/__init__',
+             'tests/settingstest',
+             'test_rest_api'
+             ])
 
         os.remove(args.project_name + r'/settings.py')
         subprocess.call(['cp', args.project_name +'/settings/defaults.py', args.project_name + r'/settings.py'])
