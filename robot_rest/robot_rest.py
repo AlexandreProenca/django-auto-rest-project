@@ -4,7 +4,7 @@
 # Floripa Dom 00:52 13/09/2015
 # !/usr/bin/python
 from argparse import ArgumentParser
-from pkg_resources import resource_filename
+import pkg_resources
 import string
 from random import choice
 import os
@@ -61,45 +61,55 @@ def main():
 
     if args.database_host:
 
-        #TODO carregar essa lista de um arquivo de configuração
-        subprocess.call(["pip", "install", "django", "django-oauth-toolkit", "django-admin-bootstrapped",
-                         "django-cors-headers", "django-filter", "google-api-python-client", "feedparser",
-                         "django-rest-auth", "django-jet",
-                         "django-rest-swagger", "djangorestframework", "Markdown", "simplejson", "MySQL-python",
-                         "django-url-filter", "django-drf-file-generator"])
+        def sed(filenames):
+            for name in filenames:
+                with open(args.project_name + r'/settings/'+name+'.py', 'wt') as fout:
+                    with open(pkg_resources.resource_filename('robot_rest', 'settings/'+name+'.tpl'), 'rt') as fin:
+                        for line in fin:
+                            if '@projeto@' in line:
+                                fout.write(line.replace('@projeto@', args.project_name))
+                            elif '@HOST@' in line:
+                                fout.write(line.replace('@HOST@', args.database_host))
+                            elif '@USER@' in line:
+                                fout.write(line.replace('@USER@', args.database_user))
+                            elif '@PASSWORD@' in line:
+                                fout.write(line.replace('@PASSWORD@', args.database_password))
+                            elif '@NAME@' in line:
+                                fout.write(line.replace('@NAME@', args.database_name))
+                            elif '@SECRET@' in line:
+                                fout.write(line.replace('@SECRET@', ''.join([choice(string.letters + string.digits) for _ in range(50)])))
+                            else:
+                                fout.write(line)
+                os.remove(args.project_name + r'/settings/'+name+'.tpl')
+
+        with open(pkg_resources.resource_filename('robot_rest', 'requirements.txt'), 'rt') as requirements:
+            for line in requirements:
+                subprocess.call(["pip", "install", line])
 
         subprocess.call(["django-admin", "startproject", args.project_name])
         os.chdir(args.project_name)
         subprocess.call(["django-admin", "startapp", "core"])
-        subprocess.call(['cp', resource_filename('robot_rest', 'urls.tpl'), args.project_name + r'/urls.py'])
 
-        with open(args.project_name + r'/settings.py', 'wt') as fout:
-            with open(resource_filename('robot_rest', 'settings.tpl'), 'rt') as fin:
-                for line in fin:
-                    if '@projeto@' in line:
-                        fout.write(line.replace('@projeto@', args.project_name))
-                    elif '@HOST@' in line:
-                        fout.write(line.replace('@HOST@', args.database_host))
-                    elif '@USER@' in line:
-                        fout.write(line.replace('@USER@', args.database_user))
-                    elif '@PASSWORD@' in line:
-                        fout.write(line.replace('@PASSWORD@', args.database_password))
-                    elif '@NAME@' in line:
-                        fout.write(line.replace('@NAME@', args.database_name))
-                    elif '@SECRET@' in line:
-                        fout.write(line.replace('@SECRET@', ''.join([choice(string.letters + string.digits) for _ in range(50)])))
-                    else:
-                        fout.write(line)
+        subprocess.call(['cp', pkg_resources.resource_filename('robot_rest', 'urls.tpl'), args.project_name + r'/urls.py'])
+        subprocess.call(['cp', '-r', pkg_resources.resource_filename('robot_rest', 'settings'), args.project_name + r'/'])
+
+        sed(['defaults', 'dev', 'production', 'tests', '__init__'])
+
+        os.remove(args.project_name + r'/settings.py')
+        subprocess.call(['cp', args.project_name +'/settings/defaults.py', args.project_name + r'/settings.py'])
 
         models = subprocess.check_output(['python', 'manage.py', 'inspectdb'])
+
         with open("core/models.py", "w") as f:
             [f.write(l) for l in models]
+
         subprocess.call(["drf_gen", "-m", "core/models.py", "-A"])
         subprocess.call(["mv", "drf_gen_build/admin.py", "core"])
         subprocess.call(["mv", "drf_gen_build/urls.py", "core"])
         subprocess.call(["mv", "drf_gen_build/views.py", "core"])
         subprocess.call(["mv", "drf_gen_build/serializers.py", "core"])
         shutil.rmtree('drf_gen_build')
+
         with open('requirements.txt', 'w') as f:
             requirements = subprocess.check_output(['pip', 'freeze'])
             [f.write(l) for l in requirements]

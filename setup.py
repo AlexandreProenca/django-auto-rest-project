@@ -77,9 +77,10 @@ setup(
     },
     zip_safe=False,
     keywords='django',
-    package_data={
-        'robot_rest': ['*.tpl'],
 
+
+    package_data={
+        'robot_rest': ['*.tpl', '*.txt', 'settings/__init__.tpl', 'settings/defaults.tpl', 'settings/dev.tpl', 'settings/production.tpl', 'settings/tests.tpl'],
     },
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
