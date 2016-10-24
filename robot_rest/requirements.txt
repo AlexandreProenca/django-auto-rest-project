@@ -24,3 +24,4 @@ pyasn1-modules
 requests
 rsa
 simplejson
+django-allauth
