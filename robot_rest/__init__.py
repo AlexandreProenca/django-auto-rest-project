@@ -28,7 +28,7 @@ _/~~~~~~~~|~~\,   ---|---\___/----|  \/\-\
 """
 
 __title__ = 'Djanago Auto REST Project'
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 __author__ = 'Alexandre Proença'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Alexandre Proença'
