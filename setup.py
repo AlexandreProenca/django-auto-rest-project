@@ -43,20 +43,20 @@ def get_package_data(package):
 version = get_version('robot_rest')
 
 if sys.argv[-1] == 'publish':
-    if os.system("pip freeze | grep wheel"):
-        print("wheel not installed.\nUse `pip install wheel`.\nExiting.")
-        sys.exit()
-    if os.system("pip freeze | grep twine"):
-        print("twine not installed.\nUse `pip install twine`.\nExiting.")
-        sys.exit()
+    # if os.system("pip freeze | grep wheel"):
+    #     print("wheel not installed.\nUse `pip install wheel`.\nExiting.")
+    #     sys.exit()
+    # if os.system("pip freeze | grep twine"):
+    #     print("twine not installed.\nUse `pip install twine`.\nExiting.")
+    #     sys.exit()
     os.system("python setup.py sdist bdist_wheel")
-    os.system("twine upload dist/*")
-    print("You probably want to also tag the version now:")
-    print("  git tag -a %s -m 'version %s'" % (version, version))
-    print("  git push --tags")
-    shutil.rmtree('dist')
-    shutil.rmtree('build')
-    shutil.rmtree('django_auto_rest_project.egg-info')
+    # os.system("twine upload dist/*")
+    # print("You probably want to also tag the version now:")
+    # print("  git tag -a %s -m 'version %s'" % (version, version))
+    # print("  git push --tags")
+    # shutil.rmtree('dist')
+    # shutil.rmtree('build')
+    # shutil.rmtree('django_auto_rest_project.egg-info')
     sys.exit()
 
 
@@ -87,9 +87,9 @@ setup(
                        'settings/dev.tpl',
                        'settings/production.tpl',
                        'settings/tests.tpl',
-                       'tests/__init__.py',
-                       'tests/settingstest.py',
-                       'tests/test_rest_api.py'
+                       'tests/__init__.tpl',
+                       'tests/settingstest.tpl',
+                       'tests/test_rest_api.tpl'
                        ],
     },
     classifiers=[

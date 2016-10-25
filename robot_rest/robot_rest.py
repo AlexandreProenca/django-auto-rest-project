@@ -63,7 +63,7 @@ def main():
 
         def sed(paths):
             for path in paths:
-                with open(args.project_name + r'/'+path+'.py', 'wt') as fout:
+                with open(args.project_name + r'/' + path+'.py', 'wt') as fout:
                     with open(pkg_resources.resource_filename('robot_rest', path+'.tpl'), 'rt') as fin:
                         for line in fin:
                             if '@projeto@' in line:
@@ -95,13 +95,13 @@ def main():
         subprocess.call(['cp', '-r', pkg_resources.resource_filename('robot_rest', 'tests'), args.project_name + r'/'])
 
         sed(['settings/defaults',
-             'settings/dev',
-             'settings/production',
-             'settings/tests',
-             'settings/__init__',
+             '/settings/dev',
+             '/settings/production',
+             '/settings/tests',
+             '/settings/__init__',
              'tests/__init__',
              'tests/settingstest',
-             'test_rest_api'
+             'tests/test_rest_api'
              ])
 
         os.remove(args.project_name + r'/settings.py')
