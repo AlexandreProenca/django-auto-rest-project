@@ -42,8 +42,6 @@ urlpatterns = [
     url(r'^v1/accounts/password_reset/mailed/$', reset_done, name="password_reset_confirm"),
     url(r'^v1/accounts/password_reset/(?P<uidb64>[0-9A-Za-z]{1,13})-(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$', reset_confirm,  {'post_reset_redirect' : '/accounts/password_reset/complete/'}, name="password_reset_confirm"),
     url(r'^v1/accounts/password_reset/complete/$', reset_complete),
-
-    url(r'^v1/o/', include('oauth2_provider.urls', namespace='oauth2_provider')), #social Login
     url(r'^v1/rest-auth/', include('rest_auth.urls')), #default autentication
 
 ]

@@ -45,10 +45,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'rest_auth',
-    'oauth2_provider',
-    'social.apps.django_app.default',
     'rest_framework_swagger',
-    'rest_framework_social_oauth2',
+
 ]
 
 MIDDLEWARE = [
@@ -61,10 +59,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'social.apps.django_app.context_processors.backends',
-    'social.apps.django_app.context_processors.login_redirect',
-)
+
 
 TEMPLATES = [
     {
