@@ -1,6 +1,6 @@
 ###Django Auto REST Project
 
-[![Badge](https://travis-ci.org/AlexandreProenca/django-auto-rest-project.svg?branch=master)](https://travis-ci.org/AlexandreProenca/django-auto-rest-project "Travis CI")
+[![Badge](https://github.com/AlexandreProenca/django-auto-rest-project/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandreProenca/django-auto-rest-project/actions/workflows/ci.yml "CI")
 [![Badge](https://img.shields.io/pypi/v/django-auto-rest-project.svg)](https://pypi.python.org/pypi/django-auto-rest-project "Pypi")
 [![Badge](https://img.shields.io/pypi/dd/django-auto-rest-project.svg)](https://pypi.python.org/pypi/django-auto-rest-project "Pypi")
 [![Badge](https://img.shields.io/pypi/pyversions/django-auto-rest-project.svg)](https://pypi.python.org/pypi/django-auto-rest-project "Pypi")
@@ -136,9 +136,11 @@ Exemples:
     url(r'^', include('core.urls')),
     
 ###Requirements
-    Python 2.7, 3.x, pypy or pypy3
-    Django 1.8+ (there are plans to support older Django versions)
-    Django REST Framework 2 or 3
+    Python 3.10+ (to run the robot_rest command)
+    MySQL database to introspect
+
+Note: the *generated* project still targets the Django 1.x era and pulls several
+unmaintained packages. Modernizing it is in progress — see CLAUDE.md.
 
 ##Authors
 `django-auto-rest-project` was written by `Alexandre Proença <alexandre.proenca@hotmail.com.br>`_.

@@ -1,5 +1,5 @@
 # coding: utf-8
-from defaults import *
+from .defaults import *
 import os
 
 # SECURITY WARNING: don't run with debug turned on in production!
