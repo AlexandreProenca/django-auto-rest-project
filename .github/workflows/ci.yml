@@ -52,28 +52,23 @@ jobs:
       - run: python -m twine check dist/*
       # Guarda o contrato de empacotamento: os templates precisam sobreviver
       # ao sdist/wheel, senao o robot quebra so na instalacao via pip.
-      - name: Assert templates are present in the wheel
+      # A lista sai da arvore de fontes, entao nao precisa ser mantida a mao.
+      - name: Assert every template survives into the wheel
         run: |
           python - <<'PY'
           import pathlib, zipfile, sys
-          wheel = next(pathlib.Path("dist").glob("*.whl"))
-          names = set(zipfile.ZipFile(wheel).namelist())
+          source = pathlib.Path("robot_rest/templates")
           expected = {
-              "robot_rest/requirements.txt",
-              "robot_rest/urls.tpl",
-              "robot_rest/settings/defaults.tpl",
-              "robot_rest/settings/dev.tpl",
-              "robot_rest/settings/production.tpl",
-              "robot_rest/settings/tests.tpl",
-              "robot_rest/settings/__init__.tpl",
-              "robot_rest/tests/__init__.tpl",
-              "robot_rest/tests/settingstest.tpl",
-              "robot_rest/tests/test_rest_api.tpl",
+              f"robot_rest/templates/{p.relative_to(source).as_posix()}"
+              for p in source.rglob("*.j2")
           }
-          missing = sorted(expected - names)
+          if not expected:
+              sys.exit("no templates found in the source tree")
+          wheel = next(pathlib.Path("dist").glob("*.whl"))
+          missing = sorted(expected - set(zipfile.ZipFile(wheel).namelist()))
           if missing:
               sys.exit(f"missing from {wheel.name}: {missing}")
-          print(f"{wheel.name}: all {len(expected)} data files present")
+          print(f"{wheel.name}: all {len(expected)} templates present")
           PY
       - uses: actions/upload-artifact@v4
         with:

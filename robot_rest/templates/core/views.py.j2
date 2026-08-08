@@ -1,0 +1,24 @@
+# Gerado por robot_rest a partir do esquema do banco.
+# Reescrito a cada execucao: coloque customizacoes em outro modulo.
+from rest_framework import viewsets
+
+{% if models %}
+from .models import (
+{% for model in models %}
+    {{ model.name }},
+{% endfor %}
+)
+from .serializers import (
+{% for model in models %}
+    {{ model.name }}Serializer,
+{% endfor %}
+)
+{% endif %}
+
+{% for model in models %}
+
+class {{ model.name }}ViewSet(viewsets.ModelViewSet):
+    queryset = {{ model.name }}.objects.all()
+    serializer_class = {{ model.name }}Serializer
+
+{% endfor %}

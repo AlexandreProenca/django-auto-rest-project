@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`django-auto-rest-project` is a **code generator**, not a Django app. It ships a single console script (`robot_rest`) that points at an existing MySQL database and scaffolds a complete Django 1.8 + Django REST Framework project from that schema.
+`django-auto-rest-project` is a **code generator**, not a Django app. It ships a single console script (`robot_rest`) that points at an existing MySQL database and scaffolds a complete Django + Django REST Framework project from that schema.
 
 The distribution name on PyPI is `django-auto-rest-project`; the Python package is `robot_rest`.
 
@@ -12,11 +12,11 @@ The distribution name on PyPI is `django-auto-rest-project`; the Python package 
 robot_rest -ip 127.0.0.1 -user someuser -database somedb -project myproject -password secret
 ```
 
-All five flags are required. The command is destructive-ish in the CWD: it creates `./<project_name>/`, pip-installs into the active environment, and runs `createsuperuser` interactively. Never run it to "test a change" outside a throwaway virtualenv + directory.
+`-password` is optional — it falls back to `$ROBOT_REST_DB_PASSWORD`, then an interactive prompt, because argv leaks into shell history and the process table. The command creates `./<project_name>/` (or `-o <dir>`) and nothing else: it does not install packages, migrate, or prompt for a superuser.
 
 ## Commands
 
-Packaging is `pyproject.toml` + setuptools. The package itself has **no runtime dependencies** — it shells out to `django-admin`/`drf_gen` — so the dev environment is cheap.
+Packaging is `pyproject.toml` + setuptools. The package depends on Django and Jinja2; DB drivers are extras (`[mysql]`, `[postgres]`). Tests need no database — they drive `inspectdb` against SQLite fixtures.
 
 ```bash
 pip install -e ".[dev]"
@@ -29,7 +29,7 @@ python -m pytest
 Single test:
 
 ```bash
-python -m pytest tests/test_robot.py::TestSubstituteLine::test_replaces_every_placeholder_on_the_same_line
+python -m pytest tests/test_codegen.py::TestUrls::test_registers_every_model_on_the_router
 ```
 
 Lint and format (ruff is the only linter; CI runs both):
@@ -50,63 +50,77 @@ Version bump — single source of truth is `__version__` in [robot_rest/__init__
 bump-my-version bump patch
 ```
 
-CI is [.github/workflows/ci.yml](.github/workflows/ci.yml): lint, a pytest matrix on Python 3.10–3.13, a build job that asserts every `.tpl` survives into the wheel, and a tag-triggered PyPI publish via trusted publishing (no secrets — needs the publisher configured on pypi.org).
+CI is [.github/workflows/ci.yml](.github/workflows/ci.yml): lint, a pytest matrix on Python 3.10–3.13, a build job that asserts every `.j2` template survives into the wheel, and a tag-triggered PyPI publish via trusted publishing (no secrets — needs the publisher configured on pypi.org).
 
 ## Architecture
 
-Orchestration lives in `main()` in [robot_rest/robot_rest.py](robot_rest/robot_rest.py) — a linear pipeline of shell-outs with **no rollback if a step fails**. The pure parts (template rendering, secret generation, context building) are module-level functions and are the only things under test.
+Five modules, each with one job:
 
-The pipeline, in order:
+| Module | Responsibility |
+|---|---|
+| [cli.py](robot_rest/cli.py) | argparse, password resolution, error → exit code, next-steps output |
+| [config.py](robot_rest/config.py) | `ProjectConfig`/`DatabaseConfig`, name validation, secret key |
+| [introspect.py](robot_rest/introspect.py) | `inspectdb` in-process + `ast` model discovery |
+| [render.py](robot_rest/render.py) | Jinja2 environment and rendering |
+| [project.py](robot_rest/project.py) | the pipeline, staging, and template→output map |
 
-1. `pip install` every line of [robot_rest/requirements.txt](robot_rest/requirements.txt) into the current environment.
-2. `django-admin startproject <project>` then `django-admin startapp core`.
-3. Copy the bundled `.tpl` files into the new project, then run the local `sed()` closure over them to substitute placeholders and rename `.tpl` → `.py`.
-4. `manage.py inspectdb` → written verbatim to `core/models.py`.
-5. `drf_gen -m core/models.py -A` (from `django-drf-file-generator`) → produces `admin.py`, `urls.py`, `views.py`, `serializers.py`, which are moved into `core/` and the `drf_gen_build/` scratch dir is removed.
-6. `pip freeze` → project `requirements.txt`.
-7. `makemigrations`, `migrate`, `createsuperuser`, `collectstatic`.
+[robot_rest/robot_rest.py](robot_rest/robot_rest.py) is a back-compat shim re-exporting `main`; the console script points at `cli:main`.
 
-### Two different requirements.txt files
+The pipeline in `generate()`:
 
-- Root [requirements.txt](requirements.txt) / [dev-requirements.txt](dev-requirements.txt) — dependencies for developing *this* package.
-- [robot_rest/requirements.txt](robot_rest/requirements.txt) — the payload installed at generation time into the *generated* project (django-jet, oauth-toolkit, swagger, social-oauth2, MySQL-python, …). Editing this changes what end users get installed.
+1. `run_inspectdb()` — configures Django in-process (`settings.configure()` with only `DATABASES`) and calls `inspectdb` under a fresh connection alias. **This runs first, before anything touches the disk**, because connection/password/driver errors are the common failure and should leave nothing behind.
+2. `discover_models()` — `ast`-parses the returned source for classes subclassing `models.Model`. No import, so it survives `inspectdb` output that wouldn't load.
+3. `scaffold()` — `startproject` + `startapp core` in-process, into a **temp staging directory**, then deletes the `settings.py` that `startproject` wrote (the rendered `settings/` package replaces it).
+4. `render_project()` — renders every template in `PROJECT_TEMPLATES` and `CORE_TEMPLATES`.
+5. `shutil.move()` staging → destination.
+
+### Why staging matters
+
+Two non-obvious reasons the project is built in a temp dir and moved:
+
+- An empty directory at the destination counts as a **namespace package**, so `startproject` rejects the name with "conflicts with an existing module" — and this fires in the most common case, generating into the current directory. Pre-creating the target directory is what broke it.
+- The destination only appears once generation fully succeeded; any failure vanishes with the temp dir. There is no partial-project cleanup path to maintain.
+
+### Codegen replaces drf_gen
+
+`django-drf-file-generator` (last release 2016) is gone. `core/serializers.py`, `views.py`, `urls.py`, and `admin.py` are rendered from templates in [robot_rest/templates/core/](robot_rest/templates/core/) using modern DRF idiom (`ModelViewSet` + `DefaultRouter`). These four files carry a "regenerated on every run" header — customizations belong elsewhere.
+
+Route naming: `AlbumTrack` → URL `album-track`, basename `album_track`, via `camel_to_snake()`.
+
+### Environment
+
+The tool depends on Django and Jinja2 and uses **its own** Django to introspect. It no longer pip-installs anything into the user's environment, and no longer runs `createsuperuser`/`migrate`/`collectstatic` — the generated project ships a `requirements.txt` and the CLI prints next steps. DB drivers are extras: `[mysql]`, `[postgres]`.
 
 ### Template system
 
-Templates live in [robot_rest/](robot_rest/) as `.tpl` and are copied out as `.py`. Placeholders are declared in `PLACEHOLDERS` and substituted by `substitute_line()`: `@projeto@`, `@HOST@`, `@USER@`, `@PASSWORD@`, `@NAME@`, `@SECRET@` (a 50-char key from `SystemRandom`).
+Templates are Jinja2 `.j2` files under [robot_rest/templates/](robot_rest/templates/). Context: `project_name`, `secret_key`, `database` (a Django `DATABASES['default']` dict, so `{{ database.NAME }}`), and `models`.
 
-Adding a new template requires **three** coordinated edits, or it will be missing at runtime for pip-installed users — the failure only shows up after `pip install`, never in a source checkout:
-1. Create `robot_rest/<path>.tpl`.
-2. Add the path to `TEMPLATE_PATHS` in [robot_rest/robot_rest.py](robot_rest/robot_rest.py).
-3. Add it to `[tool.setuptools.package-data]` in [pyproject.toml](pyproject.toml).
+The environment uses **`StrictUndefined`** — a typo in a template raises instead of silently rendering an empty file. Keep it that way.
 
-[tests/test_packaging.py](tests/test_packaging.py) enforces all three, and the CI build job re-checks the wheel contents. If you add a template that is copied directly rather than rendered (like `urls.tpl`), add it to `STANDALONE_TEMPLATES` in that test.
+Adding a template requires two coordinated edits, or it goes missing only after `pip install`, never in a source checkout:
+1. Create the `.j2` under `robot_rest/templates/`.
+2. Register it in `PROJECT_TEMPLATES` or `CORE_TEMPLATES` in [robot_rest/project.py](robot_rest/project.py).
+
+`package-data` in [pyproject.toml](pyproject.toml) uses a recursive glob, so it usually needs no change. [tests/test_packaging.py](tests/test_packaging.py) enforces the mapping in both directions (no orphan templates, no dangling references), and the CI build job re-checks the wheel.
 
 ### Generated settings layout
 
 The generated project uses a split-settings package under `<project>/settings/`, not a single `settings.py`:
 
-- `defaults.tpl` — everything shared (INSTALLED_APPS, JET admin, swagger, social auth backends, DRF config, pt-BR/America/Sao_Paulo locale).
-- `dev.tpl` — `DEBUG=True`, MySQL creds baked in from the CLI flags, `AllowAny` permissions.
-- `production.tpl` — `DEBUG=False`, creds read from environment variables, `IsAuthenticated`.
-- `tests.tpl` — SQLite.
-- `__init__.tpl` — selects the active module (`from .dev import *`; production is commented out).
-
-The generator also writes a temporary top-level `settings.py` from `defaults.tpl` before `inspectdb` and deletes it at the end. This is **dead code**: once `settings/__init__.py` exists, Python resolves `<project>.settings` to the package, not the module. Safe to remove in Phase 1.
+- `defaults.py.j2` — everything shared (INSTALLED_APPS, JET admin, swagger, social auth backends, DRF config, pt-BR/America/Sao_Paulo locale).
+- `dev.py.j2` — `DEBUG=True`, connection details baked in from the CLI flags, `AllowAny` permissions.
+- `production.py.j2` — `DEBUG=False`, creds read from environment variables, `IsAuthenticated`.
+- `tests.py.j2` — SQLite.
+- `__init__.py.j2` — selects the active module (`from .dev import *`; production is commented out).
 
 Generated URLs are versioned under `/v1/` — API routes from `core.urls`, plus swagger docs, OAuth2, social auth, token auth, and password reset. Admin uses django-jet.
 
 ## Modernization status
 
-The tool itself now runs on Python 3.10+ (Phase 0). **The generated project has not been modernized yet** — it still targets the Django 1.8/1.10 era and pulls several dead dependencies. Do not treat the templates as current best practice:
+The tool runs on Python 3.10+ and no longer depends on `drf_gen` (Phase 0 + Phase 1). **The generated project's `settings/` and project-level `urls.py` have not been modernized yet** — they still target the Django 1.8/1.10 era. `core/` is current; the project-level templates are not. Do not treat them as best practice:
 
-- `drf_gen` (`django-drf-file-generator`) — the engine that generates `views.py`/`serializers.py`/`admin.py`/`urls.py` — last released **2016**. It is the project's single biggest risk; the plan is to bring codegen in-house.
-- Also dead upstream: `django-rest-swagger` (2018), `django-jet` (2018), `django-rest-auth` (2019), `MySQL-python` (2014, Py2-only).
-- Templates still use Django ≤1.x APIs removed in modern Django: `url()`, `include(admin.site.urls)`, function-based `password_reset` views, `oauth2_provider.ext.rest_framework`, `social.apps.django_app`.
-- [robot_rest/settings/defaults.tpl](robot_rest/settings/defaults.tpl) ships a hardcoded personal Gmail address, `ALLOWED_HOSTS = ['*']`, `CORS_ORIGIN_ALLOW_ALL = True`, and `AllowAny`. The DB password arrives as an argv flag and is written in plaintext into `dev.py`.
+- Project templates still use Django APIs removed in modern Django: `url()`, `include(admin.site.urls)`, function-based `password_reset` views, `oauth2_provider.ext.rest_framework`, `social.apps.django_app`. **A generated project will not boot until these are fixed.**
+- The emitted `requirements.txt` still lists packages that are dead upstream: `django-rest-swagger` (2018), `django-jet` (2018), `django-rest-auth` (2019). Replacements: drf-spectacular, django-jet-reboot/unfold, dj-rest-auth.
+- [robot_rest/templates/project/settings/defaults.py.j2](robot_rest/templates/project/settings/defaults.py.j2) ships a hardcoded personal Gmail address, `ALLOWED_HOSTS = ['*']`, `CORS_ORIGIN_ALLOW_ALL = True`, and `AllowAny`. The DB password is still written in plaintext into `dev.py`.
 
-Generation-time behavior that is known-undesirable and slated for Phase 1: `install_requirements()` pip-installs 27 packages into the user's active environment, and `createsuperuser` blocks the pipeline on interactive input.
-
-## Conventions
-
-Comments and docstrings in the source are in Brazilian Portuguese; generated templates likewise. Match the surrounding language when editing a file.
+Fixing all of the above is Phase 2.

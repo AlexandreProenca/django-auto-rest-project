@@ -15,12 +15,12 @@ ALLOWED_HOSTS = ['*']
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': '@NAME@',
-        'USER': '@USER@',
-        'PASSWORD': '@PASSWORD@',
-        'HOST': '@HOST@',
-        'PORT': '3306',
+        'ENGINE': '{{ database.ENGINE }}',
+        'NAME': '{{ database.NAME }}',
+        'USER': '{{ database.USER }}',
+        'PASSWORD': '{{ database.PASSWORD }}',
+        'HOST': '{{ database.HOST }}',
+        'PORT': '{{ database.PORT }}',
     }
 }
 

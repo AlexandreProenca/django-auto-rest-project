@@ -14,7 +14,13 @@ authors = [
 ]
 keywords = ["django", "rest", "drf", "scaffold", "codegen", "inspectdb"]
 dynamic = ["version"]
-dependencies = []
+
+# O robot usa o proprio Django para rodar startproject/startapp/inspectdb em
+# processo. Antes ele instalava 27 pacotes no ambiente do usuario para isso.
+dependencies = [
+    "Django>=4.2",
+    "Jinja2>=3.1",
+]
 
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -38,9 +44,13 @@ Source = "https://github.com/AlexandreProenca/django-auto-rest-project"
 Issues = "https://github.com/AlexandreProenca/django-auto-rest-project/issues"
 
 [project.scripts]
-robot_rest = "robot_rest.robot_rest:main"
+robot_rest = "robot_rest.cli:main"
 
 [project.optional-dependencies]
+# Drivers de banco ficam opcionais: mysqlclient compila C na instalacao e
+# nem todo usuario precisa dele.
+mysql = ["mysqlclient>=2.2"]
+postgres = ["psycopg[binary]>=3.1"]
 dev = [
     "pytest>=8",
     "ruff>=0.6",
@@ -58,15 +68,12 @@ zip-safe = false
 version = { attr = "robot_rest.__version__" }
 
 # Os templates nao sao modulos Python, entao precisam ser declarados aqui.
-# Um template novo exige tres edicoes coordenadas: criar o .tpl, listar em
-# TEMPLATE_PATHS (robot_rest/robot_rest.py) e incluir o glob abaixo.
+# Um template novo exige duas edicoes coordenadas: criar o .j2 sob
+# robot_rest/templates/ e garantir que ele caia em um dos globs abaixo.
 # tests/test_packaging.py trava esse contrato.
 [tool.setuptools.package-data]
 robot_rest = [
-    "*.tpl",
-    "*.txt",
-    "settings/*.tpl",
-    "tests/*.tpl",
+    "templates/**/*.j2",
 ]
 
 [tool.pytest.ini_options]

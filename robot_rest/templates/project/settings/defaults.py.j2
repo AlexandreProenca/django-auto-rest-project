@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '@SECRET@'
+SECRET_KEY = '{{ secret_key }}'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -84,11 +84,11 @@ TEMPLATES = [
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
 #TODO substituir como o nome do projeto
-ROOT_URLCONF = '@projeto@.urls'
+ROOT_URLCONF = '{{ project_name }}.urls'
 
 
 #TODO subtituir com o nome do projeto
-WSGI_APPLICATION = '@projeto@.wsgi.application'
+WSGI_APPLICATION = '{{ project_name }}.wsgi.application'
 
 
 # Database
@@ -97,12 +97,12 @@ WSGI_APPLICATION = '@projeto@.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': '@NAME@',
-        'USER': '@USER@',
-        'PASSWORD': '@PASSWORD@',
-        'HOST': '@HOST@',
-        'PORT': '3306',
+        'ENGINE': '{{ database.ENGINE }}',
+        'NAME': '{{ database.NAME }}',
+        'USER': '{{ database.USER }}',
+        'PASSWORD': '{{ database.PASSWORD }}',
+        'HOST': '{{ database.HOST }}',
+        'PORT': '{{ database.PORT }}',
     }
 }
 
@@ -181,7 +181,7 @@ SWAGGER_SETTINGS = {
     'info': {
         'contact': '',
         'description': '',
-        'title': '@projeto@',
+        'title': '{{ project_name }}',
     },
     'doc_expansion': 'none',
 }

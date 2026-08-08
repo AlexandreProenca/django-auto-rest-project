@@ -1,0 +1,32 @@
+# Dependencias do projeto gerado por robot_rest.
+# NOTA: esta lista ainda nao foi modernizada -- varios pacotes abaixo estao
+# sem manutencao ha anos e serao trocados na proxima etapa do projeto.
+Django
+django-braces
+django-cors-headers
+django-filter
+django-jet
+django-oauth-toolkit
+django-rest-auth
+django-rest-swagger
+django-social-auth
+django-url-filter
+djangorestframework
+django-rest-framework-social-oauth2
+django-allauth
+feedparser
+google-api-python-client
+Markdown
+oauth2client
+oauthlib
+openapi-codec
+pyasn1
+pyasn1-modules
+requests
+rsa
+simplejson
+{% if database.ENGINE == "django.db.backends.mysql" %}
+mysqlclient
+{% elif database.ENGINE == "django.db.backends.postgresql" %}
+psycopg[binary]
+{% endif %}

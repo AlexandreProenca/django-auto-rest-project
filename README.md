@@ -54,27 +54,49 @@ Swagger the best way to document your API
 
 Usage
 -----
-    usage: robot_rest [-h] [-vv VERBOSE] -ip DATABASE_HOST -user DATABASE_USER -database DATABASE_NAME -password DATABASE_PASSWORD -project PROJECT_NAME
+    usage: robot_rest [-h] [--version] [-vv] -ip DATABASE_HOST -user DATABASE_USER
+                      -database DATABASE_NAME -project PROJECT_NAME
+                      [-port DATABASE_PORT] [-password DATABASE_PASSWORD]
+                      [-o OUTPUT_DIR]
 
     optional arguments:
     -h, --help                  Show this help message and exit
-    
-    -vv VERBOSE, --verbose      VERBOSE Increase verbosity.
-    
+
+    --version                   Show the version and exit
+
+    -vv, --verbose              Increase verbosity.
+
     -ip DATABASE_HOST           Host address of the database
-    
+
     -user DATABASE_USER         Username that have access database
-    
+
     -database DATABASE_NAME     The name of the database
-    
-    -password DATABASE_PASSWORD Password to access the database
-    
+
     -project PROJECT_NAME       The name of the project.
-    
+
+    -port DATABASE_PORT         Database port (default: 3306)
+
+    -password DATABASE_PASSWORD Password to access the database. Optional -- see below.
+
+    -o, --output-dir OUTPUT_DIR Where to create the project (default: current directory)
 
 Exemples:
 
-    robot_rest -ip 187.45.196.236 -user nwpartner3 -database partnerdb -project webscrapy -password sdf435*7
+    # password asked interactively (recommended)
+    robot_rest -ip 187.45.196.236 -user nwpartner3 -database partnerdb -project webscrapy
+
+    # password from the environment, for scripts
+    ROBOT_REST_DB_PASSWORD=... robot_rest -ip 187.45.196.236 -user nwpartner3 \
+        -database partnerdb -project webscrapy
+
+A password passed with `-password` is visible in your shell history and in the
+process list, so it is no longer required: `robot_rest` reads
+`$ROBOT_REST_DB_PASSWORD` and otherwise prompts for it.
+
+The command only writes the project directory. It does not install packages
+into your environment, run migrations, or create a superuser -- the generated
+project ships its own `requirements.txt` and the next steps are printed when
+generation finishes.
 
 ###Project's Scheme
 
