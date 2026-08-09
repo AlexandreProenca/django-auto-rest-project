@@ -54,10 +54,10 @@ Swagger the best way to document your API
 
 Usage
 -----
-    usage: robot_rest [-h] [--version] [-vv] -ip DATABASE_HOST -user DATABASE_USER
-                      -database DATABASE_NAME -project PROJECT_NAME
-                      [-port DATABASE_PORT] [-password DATABASE_PASSWORD]
-                      [-o OUTPUT_DIR]
+    usage: robot_rest [-h] [--version] [-vv] [-engine ENGINE] [-ip DATABASE_HOST]
+                      [-user DATABASE_USER] -database DATABASE_NAME
+                      -project PROJECT_NAME [-port DATABASE_PORT] [--all-tables]
+                      [--managed] [-password DATABASE_PASSWORD] [-o OUTPUT_DIR]
 
     optional arguments:
     -h, --help                  Show this help message and exit
@@ -66,15 +66,24 @@ Usage
 
     -vv, --verbose              Increase verbosity.
 
-    -ip DATABASE_HOST           Host address of the database
+    -engine ENGINE              mysql (default), postgres or sqlite
 
-    -user DATABASE_USER         Username that have access database
+    -ip DATABASE_HOST           Host address of the database. Not needed for sqlite.
+
+    -user DATABASE_USER         Username that have access database. Not needed for sqlite.
 
     -database DATABASE_NAME     The name of the database
 
     -project PROJECT_NAME       The name of the project.
 
-    -port DATABASE_PORT         Database port (default: 3306)
+    -port DATABASE_PORT         Database port (default: per engine)
+
+    --all-tables                Also map Django's own tables (auth_user, django_session...).
+                                They are skipped by default.
+
+    --managed                   Mark models as managed = True, handing Django ownership
+                                of the schema. Off by default: migrate never touches
+                                your existing tables.
 
     -password DATABASE_PASSWORD Password to access the database. Optional -- see below.
 
@@ -84,6 +93,13 @@ Exemples:
 
     # password asked interactively (recommended)
     robot_rest -ip 187.45.196.236 -user nwpartner3 -database partnerdb -project webscrapy
+
+    # PostgreSQL
+    robot_rest -engine postgres -ip 187.45.196.236 -user nwpartner3 \
+        -database partnerdb -project webscrapy
+
+    # SQLite: just the file path, no host, user or password
+    robot_rest -engine sqlite -database ./app.sqlite3 -project webscrapy
 
     # password from the environment, for scripts
     ROBOT_REST_DB_PASSWORD=... robot_rest -ip 187.45.196.236 -user nwpartner3 \
@@ -158,10 +174,25 @@ Python file. `.env.example` documents every supported variable.
 
 ###Requirements
     Python 3.10+ (to run the robot_rest command)
-    MySQL database to introspect
+    A MySQL, PostgreSQL or SQLite database to introspect
 
-Note: the *generated* project still targets the Django 1.x era and pulls several
-unmaintained packages. Modernizing it is in progress — see CLAUDE.md.
+Install the driver for your database along with the tool:
+
+    pip install 'django-auto-rest-project[mysql]'
+    pip install 'django-auto-rest-project[postgres]'
+
+SQLite needs no extra driver.
+
+###Notes
+
+Tables belonging to Django itself (`auth_user`, `django_session`, ...) are
+skipped, so pointing the tool at a database that already hosts a Django app
+will not publish its auth tables as REST routes. Pass `--all-tables` to
+include them anyway; skipped tables are always listed in the output.
+
+Models come out of `inspectdb` as `managed = False`, so `migrate` never
+creates or alters your existing tables. Pass `--managed` to hand Django
+ownership of the schema instead.
 
 ##Authors
 `django-auto-rest-project` was written by `Alexandre Proença <alexandre.proenca@hotmail.com.br>`_.

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import ProjectConfig
-from .introspect import DiscoveredModel, discover_models, run_inspectdb
+from .introspect import DiscoveredModel, discover_models, introspect_schema, set_managed
 from .render import build_environment, render_to
 
 #: Templates do projeto -> caminho de saida, relativo a raiz do projeto.
@@ -60,6 +60,8 @@ class GenerationResult:
 
     project_dir: Path
     models: list[DiscoveredModel]
+    managed: bool = False
+    skipped_tables: tuple[str, ...] = ()
 
     @property
     def model_count(self) -> int:
@@ -122,15 +124,20 @@ def render_project(project_dir: Path, config: ProjectConfig, models: list[Discov
             secret_file.chmod(0o600)
 
 
-def generate(config: ProjectConfig, destination: Path | None = None) -> GenerationResult:
+def generate(
+    config: ProjectConfig,
+    destination: Path | None = None,
+    managed: bool = False,
+    include_system_tables: bool = False,
+) -> GenerationResult:
     """
     Gera o projeto completo a partir do banco descrito em ``config``.
 
-    Em caso de erro, remove o diretorio parcialmente criado -- a versao antiga
-    deixava um projeto pela metade no disco.
-
     :param config: configuracao validada do projeto.
     :param destination: diretorio pai; por padrao o diretorio atual.
+    :param managed: se ``True``, os modelos viram ``managed = True`` e o
+        Django passa a gerenciar o schema dessas tabelas.
+    :param include_system_tables: se ``True``, nao pula as tabelas do Django.
     :raises ProjectExistsError: se o destino ja existir.
     """
     parent = Path(destination or Path.cwd())
@@ -143,7 +150,8 @@ def generate(config: ProjectConfig, destination: Path | None = None) -> Generati
 
     # Introspecta antes de criar qualquer arquivo: erro de conexao, senha ou
     # driver e o caso comum, e nao deve deixar nada no disco.
-    models_source = run_inspectdb(config.database.as_django_dict())
+    schema = introspect_schema(config.database.as_django_dict(), include_system_tables=include_system_tables)
+    models_source = set_managed(schema.models_source, managed)
     models = discover_models(models_source)
 
     # O projeto e montado em um diretorio temporario e so depois movido para
@@ -166,4 +174,9 @@ def generate(config: ProjectConfig, destination: Path | None = None) -> Generati
         parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(staging), str(project_dir))
 
-    return GenerationResult(project_dir=project_dir, models=models)
+    return GenerationResult(
+        project_dir=project_dir,
+        models=models,
+        managed=managed,
+        skipped_tables=schema.skipped_tables,
+    )

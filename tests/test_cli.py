@@ -20,12 +20,20 @@ class TestParser:
         assert args.database_name == "appdb"
         assert args.project_name == "myapi"
 
-    @pytest.mark.parametrize("missing", ["-ip", "-user", "-database", "-project"])
-    def test_required_arguments_are_enforced(self, missing):
+    @pytest.mark.parametrize("missing", ["-database", "-project"])
+    def test_always_required_arguments_are_enforced(self, missing):
         index = BASE_ARGS.index(missing)
         argv = BASE_ARGS[:index] + BASE_ARGS[index + 2 :]
         with pytest.raises(SystemExit):
             build_parser().parse_args(argv)
+
+    @pytest.mark.parametrize("optional", ["-ip", "-user"])
+    def test_host_and_user_are_conditionally_required(self, optional):
+        # Argparse nao pode exigi-los: sqlite nao usa nem host nem usuario.
+        # A obrigatoriedade por engine vive em validate_database_config.
+        index = BASE_ARGS.index(optional)
+        argv = BASE_ARGS[:index] + BASE_ARGS[index + 2 :]
+        assert build_parser().parse_args(argv) is not None
 
 
 class TestResolvePassword:

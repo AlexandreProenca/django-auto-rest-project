@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`django-auto-rest-project` is a **code generator**, not a Django app. It ships a single console script (`robot_rest`) that points at an existing MySQL database and scaffolds a complete Django + Django REST Framework project from that schema.
+`django-auto-rest-project` is a **code generator**, not a Django app. It ships a single console script (`robot_rest`) that points at an existing MySQL, PostgreSQL, or SQLite database and scaffolds a complete Django + Django REST Framework project from that schema.
 
 The distribution name on PyPI is `django-auto-rest-project`; the Python package is `robot_rest`.
 
@@ -60,7 +60,7 @@ Five modules, each with one job:
 |---|---|
 | [cli.py](robot_rest/cli.py) | argparse, password resolution, error → exit code, next-steps output |
 | [config.py](robot_rest/config.py) | `ProjectConfig`/`DatabaseConfig`, name validation, secret key |
-| [introspect.py](robot_rest/introspect.py) | `inspectdb` in-process + `ast` model discovery |
+| [introspect.py](robot_rest/introspect.py) | `inspectdb` in-process, table filtering, `ast` model discovery |
 | [render.py](robot_rest/render.py) | Jinja2 environment and rendering |
 | [project.py](robot_rest/project.py) | the pipeline, staging, and template→output map |
 
@@ -68,7 +68,7 @@ Five modules, each with one job:
 
 The pipeline in `generate()`:
 
-1. `run_inspectdb()` — configures Django in-process (`settings.configure()` with only `DATABASES`) and calls `inspectdb` under a fresh connection alias. **This runs first, before anything touches the disk**, because connection/password/driver errors are the common failure and should leave nothing behind.
+1. `introspect_schema()` — configures Django in-process (`settings.configure()` with only `DATABASES`), lists the tables, drops Django's own, and calls `inspectdb` under a fresh connection alias with the remainder. **This runs first, before anything touches the disk**, because connection/password/driver errors are the common failure and should leave nothing behind.
 2. `discover_models()` — `ast`-parses the returned source for classes subclassing `models.Model`. No import, so it survives `inspectdb` output that wouldn't load.
 3. `scaffold()` — `startproject` + `startapp core` in-process, into a **temp staging directory**, then deletes the `settings.py` that `startproject` wrote (the rendered `settings/` package replaces it).
 4. `render_project()` — renders every template in `PROJECT_TEMPLATES` and `CORE_TEMPLATES`.
@@ -118,16 +118,20 @@ Generated URLs: `admin/`, `accounts/` (Django's built-in auth views), `api-auth/
 
 ### Constraints worth knowing
 
-- **inspectdb models are `managed = False`.** They have no tables in a test database, so generated tests assert routing, auth, and schema — never queries. `migrate` only creates Django's own tables.
+- **Django's own tables are filtered out by default** (`DJANGO_SYSTEM_TABLES` in [introspect.py](robot_rest/introspect.py)). If the target database has ever been used by a Django project — including one this tool generated and the user then migrated — `inspectdb` sees `auth_user`, `django_session`, and friends. Unfiltered, that publishes the auth tables as REST routes, and under `--managed` it hard-fails with `models.E028` ("db_table is used by multiple models"). `--all-tables` opts back in; skipped tables are always reported, never dropped silently.
+- Filtering happens by passing the wanted tables to `inspectdb` positionally — it has no `--exclude`. If the filter leaves **zero** tables, `inspectdb` must not be called at all: with no positional args it introspects everything, undoing the filter.
+- **inspectdb models are `managed = False` by default.** They have no tables in a test database, so generated tests assert routing, auth, and schema — never queries. `migrate` only creates Django's own tables. `--managed` flips this and hands Django ownership of the schema; the CLI warns because `migrate` can then alter or drop real data.
 - **Generated viewsets order by `pk`.** Paginating an unordered queryset makes DRF emit `UnorderedObjectListWarning` and can repeat or skip rows across pages.
 - `tests/test_generate.py` holds regression tests against removed Django APIs (`django.conf.urls`, `include(admin.site.urls)`, `oauth2_provider.ext.*`, …) and against the old security defaults. If you touch the project templates, those are what will catch a regression.
 
 ## Modernization status
 
-Phases 0–2 are done: the tool runs on Python 3.10+, owns its codegen, and **the generated project boots on Django 5.2 and serves a working API** — verified by installing its requirements in a clean venv, running `migrate`, its own test suite, `check --deploy`, and live CRUD plus the OpenAPI schema.
+Phases 0–3 are done. The tool runs on Python 3.10+, owns its codegen, and generates a project that boots on Django 5.2 and serves a working API.
 
-Remaining (Phase 3+):
+Verified against **live databases**, not just fixtures: SQLite and PostgreSQL 16 both go schema → generated project → `pip install -r requirements.txt` → `migrate` → generated tests → live CRUD (including a foreign key) → OpenAPI schema. MySQL shares the identical code path but has not been exercised against a live server here.
 
-- MySQL is the only engine the CLI exposes. `DatabaseConfig`/`run_inspectdb` already take any engine — SQLite and PostgreSQL work internally and are used by the tests — so this is mostly a CLI flag plus documentation.
-- No `--managed/--unmanaged` flag: inspectdb marks models unmanaged, so Django will not create or migrate those tables.
-- The README still has stale badges (Codacy, readthedocs, StackShare, Gitter) and a `docs/` site that does not exist.
+Remaining:
+
+- Phase 4: rewrite the README. It still carries stale badges (Codacy, readthedocs, StackShare, Gitter) and points at a `docs/` site that does not exist.
+- The generated `requirements.txt` pins loose ranges (`Django>=4.2,<6.0`). No lockfile.
+- `DJANGO_SYSTEM_TABLES` covers `django.contrib` and `authtoken`. Tables from a third-party Django app in the same database are still introspected.

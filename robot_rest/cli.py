@@ -9,7 +9,16 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from pathlib import Path
 
 from . import __version__
-from .config import ConfigError, DatabaseConfig, ProjectConfig
+from .config import (
+    ENGINE_ALIASES,
+    SQLITE_ENGINE,
+    ConfigError,
+    DatabaseConfig,
+    ProjectConfig,
+    needs_credentials,
+    resolve_engine,
+    validate_database_config,
+)
 from .introspect import IntrospectionError
 from .project import ProjectExistsError, generate
 
@@ -18,8 +27,15 @@ PASSWORD_ENV_VAR = "ROBOT_REST_DB_PASSWORD"
 
 EPILOG = """\
 exemplos:
-  # senha perguntada interativamente (recomendado)
+  # MySQL, senha perguntada interativamente (recomendado)
   robot_rest -ip 127.0.0.1 -user appuser -database appdb -project myapi
+
+  # PostgreSQL
+  robot_rest -engine postgres -ip 127.0.0.1 -user appuser \\
+      -database appdb -project myapi
+
+  # SQLite: so o caminho do arquivo, sem host, usuario ou senha
+  robot_rest -engine sqlite -database ./app.sqlite3 -project myapi
 
   # senha via ambiente, para uso em scripts
   ROBOT_REST_DB_PASSWORD=... robot_rest -ip 127.0.0.1 -user appuser \\
@@ -39,13 +55,51 @@ def build_parser() -> ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"robot_rest {__version__}")
     parser.add_argument("-vv", "--verbose", action="store_true", help="Increase verbosity.")
-    parser.add_argument("-ip", required=True, dest="database_host", help="Host address of the database")
     parser.add_argument(
-        "-user", required=True, dest="database_user", help="Username that have access database"
+        "-engine",
+        dest="engine",
+        default="mysql",
+        choices=sorted(ENGINE_ALIASES),
+        help="Database engine (default: mysql)",
     )
-    parser.add_argument("-database", required=True, dest="database_name", help="The name of the database")
+    parser.add_argument(
+        "-ip",
+        dest="database_host",
+        default="",
+        help="Host address of the database. Required except for sqlite.",
+    )
+    parser.add_argument(
+        "-user",
+        dest="database_user",
+        default="",
+        help="Username that have access database. Required except for sqlite.",
+    )
+    parser.add_argument(
+        "-database",
+        required=True,
+        dest="database_name",
+        help="The name of the database, or the file path for sqlite",
+    )
     parser.add_argument("-project", required=True, dest="project_name", help="The name of the project.")
-    parser.add_argument("-port", dest="database_port", default="", help="Database port (default: 3306)")
+    parser.add_argument("-port", dest="database_port", default="", help="Database port (default: per engine)")
+    parser.add_argument(
+        "--all-tables",
+        action="store_true",
+        dest="include_system_tables",
+        help=(
+            "Also introspect Django's own tables (auth_user, django_session, ...). "
+            "They are skipped by default: they would collide with Django's models and "
+            "expose the auth tables as REST routes."
+        ),
+    )
+    parser.add_argument(
+        "--managed",
+        action="store_true",
+        help=(
+            "Mark the generated models as managed = True, so Django owns their schema. "
+            "By default inspectdb models are unmanaged and migrate never touches those tables."
+        ),
+    )
     parser.add_argument(
         "-password",
         dest="database_password",
@@ -90,13 +144,26 @@ def resolve_password(supplied: str | None, environ: dict | None = None, prompt=g
 def build_config(args, password: str) -> ProjectConfig:
     """
     Converte os argumentos da CLI em :class:`ProjectConfig`.
+
+    :raises ConfigError: se faltar algo obrigatorio para a engine escolhida.
     """
-    database = DatabaseConfig(
-        name=args.database_name,
-        user=args.database_user,
-        password=password,
-        host=args.database_host,
-        port=args.database_port,
+    engine = resolve_engine(args.engine)
+    name = args.database_name
+
+    # O projeto gerado roda a partir de outro diretorio, entao um caminho
+    # relativo de SQLite precisa virar absoluto antes de ir para o .env.
+    if engine == SQLITE_ENGINE and name:
+        name = str(Path(name).expanduser().resolve())
+
+    database = validate_database_config(
+        DatabaseConfig(
+            name=name,
+            user=args.database_user,
+            password=password,
+            host=args.database_host,
+            port=args.database_port,
+            engine=engine,
+        )
     )
     return ProjectConfig(project_name=args.project_name, database=database)
 
@@ -115,6 +182,23 @@ def report(result, stream=sys.stdout) -> None:
     if result.model_count == 0:
         print(
             "Nenhuma tabela foi encontrada. Confira se o usuario tem permissao de leitura no banco.",
+            file=stream,
+        )
+
+    if result.skipped_tables:
+        # Nada de corte silencioso: o usuario precisa saber o que ficou de fora.
+        print(
+            f"\nTabelas do proprio Django ignoradas ({len(result.skipped_tables)}): "
+            f"{', '.join(result.skipped_tables)}.\n"
+            "Use --all-tables se quiser mapea-las mesmo assim.",
+            file=stream,
+        )
+
+    if result.managed:
+        print(
+            "\nAtencao: os modelos foram marcados como managed = True. O Django passa a\n"
+            "gerenciar o schema dessas tabelas, entao makemigrations/migrate podem alterar\n"
+            "ou apagar dados do banco existente. Revise as migracoes antes de aplicar.",
             file=stream,
         )
 
@@ -149,10 +233,17 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     try:
-        password = resolve_password(args.database_password)
+        engine = resolve_engine(args.engine)
+        # SQLite e um arquivo local: nao faz sentido pedir senha.
+        password = resolve_password(args.database_password) if needs_credentials(engine) else ""
         config = build_config(args, password)
         output_dir = Path(args.output_dir) if args.output_dir else None
-        result = generate(config, destination=output_dir)
+        result = generate(
+            config,
+            destination=output_dir,
+            managed=args.managed,
+            include_system_tables=args.include_system_tables,
+        )
     except (ConfigError, ProjectExistsError, IntrospectionError) as exc:
         print(f"erro: {exc}", file=sys.stderr)
         return 1

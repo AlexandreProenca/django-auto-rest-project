@@ -11,8 +11,6 @@ from random import SystemRandom
 SECRET_KEY_LENGTH = 50
 
 #: Engines suportadas, mapeadas para a porta padrao de cada banco.
-#: Hoje a CLI so expoe MySQL; as demais existem para os testes e para
-#: preparar o suporte multi-banco.
 DEFAULT_PORTS = {
     "django.db.backends.mysql": "3306",
     "django.db.backends.postgresql": "5432",
@@ -20,10 +18,44 @@ DEFAULT_PORTS = {
 }
 
 MYSQL_ENGINE = "django.db.backends.mysql"
+POSTGRES_ENGINE = "django.db.backends.postgresql"
+SQLITE_ENGINE = "django.db.backends.sqlite3"
+
+#: Nomes aceitos em ``-engine`` -> engine do Django.
+ENGINE_ALIASES = {
+    "mysql": MYSQL_ENGINE,
+    "mariadb": MYSQL_ENGINE,
+    "postgres": POSTGRES_ENGINE,
+    "postgresql": POSTGRES_ENGINE,
+    "sqlite": SQLITE_ENGINE,
+    "sqlite3": SQLITE_ENGINE,
+}
+
+#: Engines que rodam em um servidor e portanto exigem host e usuario.
+#: O SQLite e um arquivo local, entao nao pede nem host, nem usuario, nem senha.
+SERVER_ENGINES = frozenset({MYSQL_ENGINE, POSTGRES_ENGINE})
 
 
 class ConfigError(ValueError):
     """Configuracao invalida informada pelo usuario."""
+
+
+def resolve_engine(name: str) -> str:
+    """
+    Converte o nome amigavel da CLI na engine do Django.
+
+    :raises ConfigError: se a engine nao for suportada.
+    """
+    try:
+        return ENGINE_ALIASES[name.strip().lower()]
+    except KeyError:
+        supported = ", ".join(sorted(set(ENGINE_ALIASES)))
+        raise ConfigError(f"Engine '{name}' nao suportada. Use uma destas: {supported}.") from None
+
+
+def needs_credentials(engine: str) -> bool:
+    """Indica se a engine exige host, usuario e senha."""
+    return engine in SERVER_ENGINES
 
 
 def generate_secret_key(length: int = SECRET_KEY_LENGTH) -> str:
@@ -56,6 +88,35 @@ def validate_project_name(name: str) -> str:
     if keyword.iskeyword(name):
         raise ConfigError(f"'{name}' e uma palavra reservada do Python e nao pode nomear o projeto.")
     return name
+
+
+def validate_database_config(database: DatabaseConfig) -> DatabaseConfig:
+    """
+    Valida a conexao antes de tentar usa-la.
+
+    Fica aqui, e nao no ``__post_init__``, porque so vale para o que o
+    usuario digita na CLI -- o codigo interno e os testes montam conexoes
+    parciais de proposito.
+
+    :raises ConfigError: se faltar algo obrigatorio para a engine escolhida.
+    """
+    if not database.name:
+        alvo = "o caminho do arquivo" if database.engine == SQLITE_ENGINE else "o nome do banco"
+        raise ConfigError(f"Informe {alvo} em -database.")
+
+    if needs_credentials(database.engine):
+        missing = []
+        if not database.host:
+            missing.append("-ip")
+        if not database.user:
+            missing.append("-user")
+        if missing:
+            raise ConfigError(
+                f"{' e '.join(missing)} {'sao' if len(missing) > 1 else 'e'} obrigatorio(s) "
+                f"para a engine '{database.engine.rsplit('.', 1)[-1]}'."
+            )
+
+    return database
 
 
 @dataclass(frozen=True)
