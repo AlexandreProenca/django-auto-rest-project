@@ -144,6 +144,62 @@ def test_readme_documents_every_cli_option():
     assert documented == [], f"opcoes ausentes do README: {documented}"
 
 
+#: Pacotes que o projeto deixou de usar. Se voltarem ao README e porque a
+#: documentacao ficou descrevendo uma versao anterior.
+ABANDONED_PACKAGES = [
+    "django-drf-file-generator",
+    "django-rest-swagger",
+    "django-rest-auth",
+    "django-jet",
+    "MySQL-python",
+    "dj-rest-auth",
+]
+
+
+@pytest.mark.parametrize("package", ABANDONED_PACKAGES)
+def test_readme_does_not_mention_dropped_packages(package):
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    assert package.lower() not in readme.lower()
+
+
+def test_readme_documents_the_generated_dependencies():
+    # O README lista o que o projeto gerado instala; a lista real vive no
+    # template. Ja divergiu antes.
+    from robot_rest.config import DatabaseConfig
+    from robot_rest.render import render
+
+    rendered = render(
+        "project/requirements.txt.j2",
+        {
+            "project_name": "p",
+            "secret_key": "k",
+            "database": DatabaseConfig(name="d").as_django_dict(),
+            "models": [],
+            "auth_enabled": True,
+        },
+    )
+    declared = [
+        line.split(">=")[0].split("<")[0].split("[")[0].strip()
+        for line in rendered.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8").lower()
+    # 'djangorestframework' aparece escrito por extenso na prosa.
+    aliases = {"djangorestframework": "django rest framework"}
+    missing = [d for d in declared if aliases.get(d, d).lower() not in readme]
+    assert missing == [], f"dependencias do projeto gerado ausentes do README: {missing}"
+
+
+def test_readme_uses_the_current_activation_url():
+    # A rota de ativacao nao recebe a chave no caminho desde a 5.x; o README
+    # documentava a forma antiga depois da migracao.
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "/accounts/activate/<key>" not in readme
+    if "accounts/activate/" in readme:
+        assert "activation_key=" in readme
+
+
 def test_drf_gen_is_not_a_dependency():
     # A dependencia morta que o Phase 1 removeu.
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
