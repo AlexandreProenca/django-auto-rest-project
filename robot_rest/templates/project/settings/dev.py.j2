@@ -1,0 +1,12 @@
+# coding: utf-8
+"""Configuracao de desenvolvimento."""
+
+from .defaults import *  # noqa: F403
+
+DEBUG = True
+
+# ALLOWED_HOSTS continua vindo do .env: uma fonte de verdade so.
+# Com DEBUG=True o Django ja libera localhost automaticamente.
+
+# Em desenvolvimento os e-mails vao para o console.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

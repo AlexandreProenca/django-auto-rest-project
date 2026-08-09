@@ -1,0 +1,18 @@
+# coding: utf-8
+"""Configuracao usada pelos testes."""
+
+from .defaults import *  # noqa: F403
+
+DEBUG = False
+
+# Os modelos vindos do inspectdb sao managed = False, entao o banco de teste
+# so precisa das tabelas do proprio Django.
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
+    }
+}
+
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

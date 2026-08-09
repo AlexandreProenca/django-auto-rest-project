@@ -1,0 +1,19 @@
+# Gerado por robot_rest a partir do esquema do banco.
+# Reescrito a cada execucao: coloque customizacoes em outro modulo.
+from django.contrib import admin
+
+{% if models %}
+from .models import (
+{% for model in models %}
+    {{ model.name }},
+{% endfor %}
+)
+{% endif %}
+
+{% for model in models %}
+
+@admin.register({{ model.name }})
+class {{ model.name }}Admin(admin.ModelAdmin):
+    pass
+
+{% endfor %}

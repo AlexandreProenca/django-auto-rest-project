@@ -1,0 +1,100 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-auto-rest-project"
+description = "This tool provide a way to build Django RESTful projects based your database"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.rst"]
+requires-python = ">=3.10"
+authors = [
+    { name = "Alexandre Proença", email = "alexandre.proenca@hotmail.com.br" },
+]
+keywords = ["django", "rest", "drf", "scaffold", "codegen", "inspectdb"]
+dynamic = ["version"]
+
+# O robot usa o proprio Django para rodar startproject/startapp/inspectdb em
+# processo. Antes ele instalava 27 pacotes no ambiente do usuario para isso.
+dependencies = [
+    "Django>=4.2",
+    "Jinja2>=3.1",
+]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    # Sem classifier de licenca: PEP 639 exige apenas a expressao SPDX acima.
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Code Generators",
+]
+
+[project.urls]
+Homepage = "https://github.com/AlexandreProenca/django-auto-rest-project"
+Source = "https://github.com/AlexandreProenca/django-auto-rest-project"
+Issues = "https://github.com/AlexandreProenca/django-auto-rest-project/issues"
+
+[project.scripts]
+robot_rest = "robot_rest.cli:main"
+
+[project.optional-dependencies]
+# Drivers de banco ficam opcionais: mysqlclient compila C na instalacao e
+# nem todo usuario precisa dele.
+mysql = ["mysqlclient>=2.2"]
+postgres = ["psycopg[binary]>=3.1"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "build>=1.2",
+    "twine>=5",
+    "bump-my-version>=0.26",
+    "tomli>=2.0; python_version < '3.11'",
+    # Usada apenas para verificar que o .env gerado e lido corretamente.
+    "django-environ>=0.11",
+]
+
+[tool.setuptools]
+packages = ["robot_rest"]
+zip-safe = false
+
+[tool.setuptools.dynamic]
+version = { attr = "robot_rest.__version__" }
+
+# Os templates nao sao modulos Python, entao precisam ser declarados aqui.
+# Um template novo exige duas edicoes coordenadas: criar o .j2 sob
+# robot_rest/templates/ e garantir que ele caia em um dos globs abaixo.
+# tests/test_packaging.py trava esse contrato.
+[tool.setuptools.package-data]
+robot_rest = [
+    "templates/**/*.j2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+# Arquivos de referencia do codegen: sao saida esperada, nao codigo do projeto.
+extend-exclude = ["tests/golden"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+
+[tool.bumpversion]
+current_version = "1.0.0"
+commit = true
+tag = true
+
+[[tool.bumpversion.files]]
+filename = "robot_rest/__init__.py"

@@ -1,0 +1,71 @@
+# coding: utf-8
+"""
+Testes de fumaca da API gerada.
+
+Os modelos vindos do inspectdb sao managed = False e nao tem tabela no banco
+de teste, entao aqui se verifica roteamento, autenticacao e schema -- nada
+que dependa de consultar as tabelas do banco original.
+"""
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIClient
+
+
+class TestSchema(TestCase):
+    def test_openapi_schema_is_served(self):
+        response = self.client.get(reverse("schema"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_swagger_ui_is_served(self):
+        response = self.client.get(reverse("swagger-ui"))
+        self.assertEqual(response.status_code, 200)
+
+
+class TestTokenAuth(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user("testuser", password="testing-pass-123")
+
+    def test_valid_credentials_return_a_token(self):
+        response = self.client.post(
+            reverse("token-auth"),
+            {"username": "testuser", "password": "testing-pass-123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("token", response.json())
+
+    def test_invalid_credentials_are_rejected(self):
+        response = self.client.post(
+            reverse("token-auth"),
+            {"username": "testuser", "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_token_is_created_for_the_user(self):
+        self.client.post(
+            reverse("token-auth"),
+            {"username": "testuser", "password": "testing-pass-123"},
+            format="json",
+        )
+        self.assertTrue(Token.objects.filter(user=self.user).exists())
+
+{% if models %}
+
+class TestGeneratedRoutes(TestCase):
+    """Uma rota por modelo descoberto no banco."""
+
+{% for model in models %}
+    def test_{{ model.basename }}_list_route_exists(self):
+        self.assertTrue(reverse("{{ model.basename }}-list"))
+
+    def test_{{ model.basename }}_list_requires_authentication(self):
+        response = APIClient().get(reverse("{{ model.basename }}-list"))
+        self.assertIn(response.status_code, (401, 403))
+
+{% endfor %}
+{% endif %}

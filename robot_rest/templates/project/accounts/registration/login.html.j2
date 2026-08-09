@@ -1,0 +1,14 @@
+{% raw %}{% extends "base.html" %}
+{% block title %}Entrar{% endblock %}
+{% block heading %}Entrar{% endblock %}
+{% block content %}
+  {% if form.errors %}<p class="errorlist">Usuario ou senha invalidos.</p>{% endif %}
+  <form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Entrar</button>
+  </form>
+{% endblock %}
+{% block nav %}
+  <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
+  <a href="{% url 'django_registration_register' %}">Criar conta</a>
+{% endblock %}{% endraw %}

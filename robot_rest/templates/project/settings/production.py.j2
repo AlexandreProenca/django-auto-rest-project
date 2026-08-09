@@ -1,0 +1,19 @@
+# coding: utf-8
+"""
+Configuracao de producao.
+
+Ative com DJANGO_SETTINGS_MODULE={{ project_name }}.settings.production e
+confira `python manage.py check --deploy` antes de subir.
+"""
+
+from .defaults import *  # noqa: F403
+
+DEBUG = False
+
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)  # noqa: F405
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 30)  # noqa: F405
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

@@ -1,0 +1,35 @@
+{% raw %}<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Conta{% endblock %}</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+           margin: 0; display: grid; place-items: center; min-height: 100vh;
+           background: Canvas; color: CanvasText; }
+    main { width: min(28rem, 92vw); padding: 2rem; border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+           border-radius: .75rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+    p { line-height: 1.5; }
+    form p { margin: 0 0 1rem; display: grid; gap: .35rem; }
+    label { font-size: .85rem; opacity: .8; }
+    input { padding: .55rem .7rem; font: inherit; border-radius: .4rem;
+            border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+            background: Canvas; color: CanvasText; }
+    button { padding: .6rem 1rem; font: inherit; border: 0; border-radius: .4rem;
+             background: AccentColor; color: AccentColorText; cursor: pointer; }
+    .errorlist { color: #d33; padding-left: 1rem; margin: .25rem 0; font-size: .85rem; }
+    .helptext { font-size: .78rem; opacity: .7; }
+    nav { margin-top: 1.25rem; font-size: .85rem; display: flex; gap: 1rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{% block heading %}{% endblock %}</h1>
+    {% block content %}{% endblock %}
+    <nav>{% block nav %}{% endblock %}</nav>
+  </main>
+</body>
+</html>{% endraw %}
