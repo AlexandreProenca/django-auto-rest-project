@@ -1,124 +1,71 @@
 # coding: utf-8
-from django.test import TestCase
+"""
+Testes de fumaca da API gerada.
+
+Os modelos vindos do inspectdb sao managed = False e nao tem tabela no banco
+de teste, entao aqui se verifica roteamento, autenticacao e schema -- nada
+que dependa de consultar as tabelas do banco original.
+"""
+
 from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
 
-class TestAPIViews(TestCase):
+class TestSchema(TestCase):
+    def test_openapi_schema_is_served(self):
+        response = self.client.get(reverse("schema"))
+        self.assertEqual(response.status_code, 200)
 
+    def test_swagger_ui_is_served(self):
+        response = self.client.get(reverse("swagger-ui"))
+        self.assertEqual(response.status_code, 200)
+
+
+class TestTokenAuth(TestCase):
     def setUp(self):
-        """
-        Objetos necessarios para os testes
-        :return:
-        """
         self.client = APIClient()
-        self.user = User.objects.create_user('testuser@test.com', password='testing')
-        self.user.save()
-        self.token = Token.objects.get(user=self.user)
+        self.user = User.objects.create_user("testuser", password="testing-pass-123")
 
-    def _require_login(self):
-        """
-        Token do usuario de teste
-        :return: APIClient().credentials()
-        """
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + str(self.token))
+    def test_valid_credentials_return_a_token(self):
+        response = self.client.post(
+            reverse("token-auth"),
+            {"username": "testuser", "password": "testing-pass-123"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("token", response.json())
 
-    def test_login_account(self):
-        """
-        Login
-        :return: 200
-        """
-        response = self.client.post(path='/v1/rest-auth/login/',
-                                    data={"username": 'testuser@test.com', "password": 'testing'}, format='json')
-        self.assertEqual(response.status_code, 200,
-                         'Expected Response Code 200, received {0} instead.'.format(response.status_code))
+    def test_invalid_credentials_are_rejected(self):
+        response = self.client.post(
+            reverse("token-auth"),
+            {"username": "testuser", "password": "wrong"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
 
-    def test_login_account_fail(self):
-        """
-        Falha no login (credenciais erradas).
-        :return: 400
-        """
-        response = self.client.post('/v1/rest-auth/login/',
-                                    {"username": 'testuser@test.com', "password": 'testings'},
-                                    format='json')
+    def test_token_is_created_for_the_user(self):
+        self.client.post(
+            reverse("token-auth"),
+            {"username": "testuser", "password": "testing-pass-123"},
+            format="json",
+        )
+        self.assertTrue(Token.objects.filter(user=self.user).exists())
 
-        self.assertEqual(response.status_code, 400,
-            'Expected Response Code 400, received {0} instead.'.format(response.status_code))
+{% if models %}
 
-    def test_create_account_user(self):
-        """
-        Criação de conta de usuario.
-        :return: 201
-        """
+class TestGeneratedRoutes(TestCase):
+    """Uma rota por modelo descoberto no banco."""
 
-        response = self.client.post('/v1/users/',
-                                    {"username": 'toni@maluco', "password": 'cidade'},
-                                    format='json')
+{% for model in models %}
+    def test_{{ model.basename }}_list_route_exists(self):
+        self.assertTrue(reverse("{{ model.basename }}-list"))
 
-        self.assertEqual(response.status_code, 201,
-            'Expected Response Code 201, received {0} instead.'.format(response.status_code))
+    def test_{{ model.basename }}_list_requires_authentication(self):
+        response = APIClient().get(reverse("{{ model.basename }}-list"))
+        self.assertIn(response.status_code, (401, 403))
 
-    def test_update_account_user(self):
-        """
-        Update de usuario e senha.
-        :return: 200
-        """
-        self._require_login()
-
-        response = self.client.put('/v1/users/' +str(self.user.id)+'/',
-                                    {"username": 'toni@malucao', "password": 'cidadeeee'},
-                                    format='json')
-
-        self.assertEqual(response.status_code, 200,
-            'Expected Response Code 200, received {0} instead.'.format(response.status_code))
-
-    def test_update_account_user_fail(self):
-        """
-        Update de usuario e senha não autorizados.
-        :return: 401
-        """
-        response = self.client.put('/v1/users/' +str(self.user.id)+'/',
-                                    {"username": 'toni@malucao', "password": 'cidadeeee'},
-                                    format='json')
-
-        self.assertEqual(response.status_code, 401,
-            'Expected Response Code 401, received {0} instead.'.format(response.status_code))
-
-    def test_delete_account_user(self):
-        """
-        Deleção da conta.
-        :return: 204
-        """
-        self._require_login()
-        response = self.client.delete('/v1/users/' +str(self.user.id)+'/', format='json')
-        self.assertEqual(response.status_code, 204,
-            'Expected Response Code 204, received {0} instead.'.format(response.status_code))
-
-    def test_delete_account_user_fail(self):
-        """
-        Deleção da conta não autorizado.
-        :return: 401
-        """
-        response = self.client.delete('/v1/users/' +str(self.user.id)+'/', format='json')
-        self.assertEqual(response.status_code, 401,
-            'Expected Response Code 401, received {0} instead.'.format(response.status_code))
-
-    def test_list_users(self):
-        """
-        Listagem dos usuários.
-        :return: 200
-        """
-        self._require_login()
-        response = self.client.get('/v1/users/', format='json')
-        self.assertEqual(response.status_code, 200,
-            'Expected Response Code 200, received {0} instead.'.format(response.status_code))
-
-    def test_list_users_fail(self):
-        """
-        Listagem dos usuários não autorizado.
-        :return: 401
-        """
-        response = self.client.get('/v1/users/', format='json')
-        self.assertEqual(response.status_code, 401,
-            'Expected Response Code 401, received {0} instead.'.format(response.status_code))
+{% endfor %}
+{% endif %}

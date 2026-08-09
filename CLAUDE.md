@@ -105,22 +105,29 @@ Adding a template requires two coordinated edits, or it goes missing only after 
 
 ### Generated settings layout
 
-The generated project uses a split-settings package under `<project>/settings/`, not a single `settings.py`:
+Split-settings package under `<project>/settings/`, all values from the environment via `django-environ`:
 
-- `defaults.py.j2` — everything shared (INSTALLED_APPS, JET admin, swagger, social auth backends, DRF config, pt-BR/America/Sao_Paulo locale).
-- `dev.py.j2` — `DEBUG=True`, connection details baked in from the CLI flags, `AllowAny` permissions.
-- `production.py.j2` — `DEBUG=False`, creds read from environment variables, `IsAuthenticated`.
-- `tests.py.j2` — SQLite.
-- `__init__.py.j2` — selects the active module (`from .dev import *`; production is commented out).
+- `defaults.py.j2` — shared config; reads `.env`. `IsAuthenticated` by default, `CORS_ALLOWED_ORIGINS` (never allow-all), drf-spectacular as the schema class.
+- `dev.py.j2` — `DEBUG=True`, console email. Deliberately does **not** set `ALLOWED_HOSTS`; that stays a single source of truth in `.env`.
+- `production.py.j2` — `DEBUG=False` plus TLS/HSTS/secure-cookie hardening. `manage.py check --deploy` passes clean.
+- `tests.py.j2` — in-memory SQLite. Needed because inspectdb models are `managed = False` and have no tables in a test database.
 
-Generated URLs are versioned under `/v1/` — API routes from `core.urls`, plus swagger docs, OAuth2, social auth, token auth, and password reset. Admin uses django-jet.
+Three untracked-by-default files are also generated: `.env` (chmod 600, holds the DB password and `SECRET_KEY`), `.env.example`, and `.gitignore` that excludes `.env`.
+
+Generated URLs: `admin/`, `accounts/` (Django's built-in auth views), `api-auth/`, `v1/` (routes from `core.urls`), `v1/token-auth/`, `v1/schema/`, `v1/docs/`, `v1/redoc/`.
+
+### Constraints worth knowing
+
+- **inspectdb models are `managed = False`.** They have no tables in a test database, so generated tests assert routing, auth, and schema — never queries. `migrate` only creates Django's own tables.
+- **Generated viewsets order by `pk`.** Paginating an unordered queryset makes DRF emit `UnorderedObjectListWarning` and can repeat or skip rows across pages.
+- `tests/test_generate.py` holds regression tests against removed Django APIs (`django.conf.urls`, `include(admin.site.urls)`, `oauth2_provider.ext.*`, …) and against the old security defaults. If you touch the project templates, those are what will catch a regression.
 
 ## Modernization status
 
-The tool runs on Python 3.10+ and no longer depends on `drf_gen` (Phase 0 + Phase 1). **The generated project's `settings/` and project-level `urls.py` have not been modernized yet** — they still target the Django 1.8/1.10 era. `core/` is current; the project-level templates are not. Do not treat them as best practice:
+Phases 0–2 are done: the tool runs on Python 3.10+, owns its codegen, and **the generated project boots on Django 5.2 and serves a working API** — verified by installing its requirements in a clean venv, running `migrate`, its own test suite, `check --deploy`, and live CRUD plus the OpenAPI schema.
 
-- Project templates still use Django APIs removed in modern Django: `url()`, `include(admin.site.urls)`, function-based `password_reset` views, `oauth2_provider.ext.rest_framework`, `social.apps.django_app`. **A generated project will not boot until these are fixed.**
-- The emitted `requirements.txt` still lists packages that are dead upstream: `django-rest-swagger` (2018), `django-jet` (2018), `django-rest-auth` (2019). Replacements: drf-spectacular, django-jet-reboot/unfold, dj-rest-auth.
-- [robot_rest/templates/project/settings/defaults.py.j2](robot_rest/templates/project/settings/defaults.py.j2) ships a hardcoded personal Gmail address, `ALLOWED_HOSTS = ['*']`, `CORS_ORIGIN_ALLOW_ALL = True`, and `AllowAny`. The DB password is still written in plaintext into `dev.py`.
+Remaining (Phase 3+):
 
-Fixing all of the above is Phase 2.
+- MySQL is the only engine the CLI exposes. `DatabaseConfig`/`run_inspectdb` already take any engine — SQLite and PostgreSQL work internally and are used by the tests — so this is mostly a CLI flag plus documentation.
+- No `--managed/--unmanaged` flag: inspectdb marks models unmanaged, so Django will not create or migrate those tables.
+- The README still has stale badges (Codacy, readthedocs, StackShare, Gitter) and a `docs/` site that does not exist.

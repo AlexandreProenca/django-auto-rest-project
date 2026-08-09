@@ -132,13 +132,101 @@ class TestGeneratedCode:
         for path in generated.project_dir.rglob("*.py"):
             assert "@projeto@" not in path.read_text(encoding="utf-8")
 
-    def test_settings_carry_the_connection_details(self, generated):
-        dev = (generated.project_dir / "myapi" / "settings" / "dev.py").read_text(encoding="utf-8")
-        assert "django.db.backends.sqlite3" in dev
+    def test_connection_details_live_in_dotenv(self, generated):
+        env_file = (generated.project_dir / ".env").read_text(encoding="utf-8")
+        assert "DB_ENGINE=django.db.backends.sqlite3" in env_file
+        assert "SECRET_KEY=" in env_file
+
+    def test_no_secret_value_is_written_into_a_python_file(self, generated):
+        # A versao antiga gravava a SECRET_KEY literal dentro de settings.py.
+        env_file = (generated.project_dir / ".env").read_text(encoding="utf-8")
+        secret = next(
+            line.split("=", 1)[1].strip().strip('"')
+            for line in env_file.splitlines()
+            if line.startswith("SECRET_KEY=")
+        )
+        assert len(secret) == 50
+
+        for path in generated.project_dir.rglob("*.py"):
+            assert secret not in path.read_text(encoding="utf-8"), path
+
+    def test_settings_read_secrets_from_the_environment(self, generated):
+        defaults = (generated.project_dir / "myapi" / "settings" / "defaults.py").read_text(encoding="utf-8")
+        assert 'SECRET_KEY = env("SECRET_KEY")' in defaults
+
+    def test_dotenv_is_gitignored_by_the_generated_project(self, generated):
+        gitignore = (generated.project_dir / ".gitignore").read_text(encoding="utf-8")
+        assert ".env" in gitignore
+
+    def test_dotenv_is_not_world_readable(self, generated):
+        mode = (generated.project_dir / ".env").stat().st_mode & 0o777
+        assert mode == 0o600, oct(mode)
+
+    def test_env_example_carries_no_real_credentials(self, generated):
+        example = (generated.project_dir / ".env.example").read_text(encoding="utf-8")
+        assert "fixture.sqlite3" not in example
 
     def test_project_name_is_substituted(self, generated):
         urls = (generated.project_dir / "myapi" / "tests" / "settingstest.py").read_text(encoding="utf-8")
         assert "myapi.settings.tests" in urls
+
+
+class TestModernDjango:
+    """Regressoes contra as APIs que o Phase 2 removeu."""
+
+    REMOVED_APIS = [
+        "django.conf.urls",  # url() sumiu no Django 4.0
+        "include(admin.site.urls)",
+        "django.contrib.auth.views.password_reset",
+        "oauth2_provider.ext.rest_framework",  # virou .contrib no DOT 1.0
+        "social.apps.django_app",  # virou social_django
+        "rest_framework_swagger",  # projeto descontinuado
+        "MIDDLEWARE_CLASSES",
+    ]
+
+    @pytest.mark.parametrize("api", REMOVED_APIS)
+    def test_generated_project_uses_no_removed_api(self, generated, api):
+        for path in generated.project_dir.rglob("*.py"):
+            assert api not in path.read_text(encoding="utf-8"), f"{path} usa {api}"
+
+    def test_urls_use_path_not_url(self, generated):
+        urls = (generated.project_dir / "myapi" / "urls.py").read_text(encoding="utf-8")
+        assert "from django.urls import" in urls
+        assert 'path("admin/", admin.site.urls)' in urls
+
+    def test_schema_is_served_by_spectacular(self, generated):
+        urls = (generated.project_dir / "myapi" / "urls.py").read_text(encoding="utf-8")
+        assert "drf_spectacular" in urls
+        assert 'name="schema"' in urls
+
+
+class TestGeneratedSecurity:
+    def test_no_hardcoded_personal_email(self, generated):
+        # defaults.tpl embutia o e-mail pessoal do autor em todo projeto gerado.
+        for path in generated.project_dir.rglob("*.py"):
+            assert "linuxloco@gmail.com" not in path.read_text(encoding="utf-8")
+
+    def test_cors_is_not_wide_open(self, generated):
+        defaults = (generated.project_dir / "myapi" / "settings" / "defaults.py").read_text(encoding="utf-8")
+        assert "CORS_ORIGIN_ALLOW_ALL" not in defaults
+        assert "CORS_ALLOWED_ORIGINS" in defaults
+
+    def test_allowed_hosts_is_not_a_wildcard(self, generated):
+        for name in ("defaults.py", "dev.py", "production.py"):
+            source = (generated.project_dir / "myapi" / "settings" / name).read_text(encoding="utf-8")
+            assert 'ALLOWED_HOSTS = ["*"]' not in source
+            assert "ALLOWED_HOSTS = ['*']" not in source
+
+    def test_default_permission_requires_authentication(self, generated):
+        defaults = (generated.project_dir / "myapi" / "settings" / "defaults.py").read_text(encoding="utf-8")
+        assert "rest_framework.permissions.IsAuthenticated" in defaults
+
+    def test_production_settings_harden_cookies_and_tls(self, generated):
+        production = (generated.project_dir / "myapi" / "settings" / "production.py").read_text(
+            encoding="utf-8"
+        )
+        for setting in ("SESSION_COOKIE_SECURE", "CSRF_COOKIE_SECURE", "SECURE_HSTS_SECONDS"):
+            assert setting in production
 
 
 class TestGeneratedRequirements:
@@ -149,17 +237,48 @@ class TestGeneratedRequirements:
 
     def test_uses_a_maintained_mysql_driver(self):
         # MySQL-python e Python 2 e nao instala; o driver segue a engine.
-        from robot_rest.render import render
-
-        context = {
-            "project_name": "p",
-            "secret_key": "k",
-            "database": DatabaseConfig(name="d").as_django_dict(),
-            "models": [],
-        }
-        requirements = render("project/requirements.txt.j2", context)
+        requirements = self.render_requirements("django.db.backends.mysql")
         assert "mysqlclient" in requirements
         assert "MySQL-python" not in requirements
+
+    def test_postgres_engine_gets_psycopg(self):
+        requirements = self.render_requirements("django.db.backends.postgresql")
+        assert "psycopg[binary]" in requirements
+        assert "mysqlclient" not in requirements
+
+    @pytest.mark.parametrize(
+        "package",
+        ["django-jet", "django-rest-swagger", "django-rest-auth", "django-social-auth", "openapi-codec"],
+    )
+    def test_dead_packages_are_gone(self, generated, package):
+        requirements = (generated.project_dir / "requirements.txt").read_text(encoding="utf-8")
+        # Comparacao por linha: "django-rest-auth" nao pode casar num comentario.
+        declared = [line.strip() for line in requirements.splitlines() if not line.strip().startswith("#")]
+        assert not any(line.startswith(package) for line in declared)
+
+    def test_install_set_is_small(self, generated):
+        requirements = (generated.project_dir / "requirements.txt").read_text(encoding="utf-8")
+        declared = [
+            line.strip()
+            for line in requirements.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        # Eram 27 pacotes antes do Phase 2.
+        assert len(declared) <= 8, declared
+
+    @staticmethod
+    def render_requirements(engine):
+        from robot_rest.render import render
+
+        return render(
+            "project/requirements.txt.j2",
+            {
+                "project_name": "p",
+                "secret_key": "k",
+                "database": DatabaseConfig(name="d", engine=engine).as_django_dict(),
+                "models": [],
+            },
+        )
 
 
 class TestSafety:

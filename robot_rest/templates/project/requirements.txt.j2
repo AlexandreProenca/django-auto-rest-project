@@ -1,32 +1,17 @@
 # Dependencias do projeto gerado por robot_rest.
-# NOTA: esta lista ainda nao foi modernizada -- varios pacotes abaixo estao
-# sem manutencao ha anos e serao trocados na proxima etapa do projeto.
-Django
-django-braces
-django-cors-headers
-django-filter
-django-jet
-django-oauth-toolkit
-django-rest-auth
-django-rest-swagger
-django-social-auth
-django-url-filter
-djangorestframework
-django-rest-framework-social-oauth2
-django-allauth
-feedparser
-google-api-python-client
-Markdown
-oauth2client
-oauthlib
-openapi-codec
-pyasn1
-pyasn1-modules
-requests
-rsa
-simplejson
+Django>=4.2,<6.0
+djangorestframework>=3.15
+django-cors-headers>=4.3
+django-filter>=24.1
+drf-spectacular>=0.27
+django-environ>=0.11
 {% if database.ENGINE == "django.db.backends.mysql" %}
-mysqlclient
+mysqlclient>=2.2
 {% elif database.ENGINE == "django.db.backends.postgresql" %}
-psycopg[binary]
+psycopg[binary]>=3.1
 {% endif %}
+
+# Opcionais, dependendo do que o projeto precisar:
+#   dj-rest-auth[with-social]  -- registro, login e reset de senha via API
+#   django-oauth-toolkit       -- servidor OAuth2
+#   django-unfold              -- admin com visual moderno

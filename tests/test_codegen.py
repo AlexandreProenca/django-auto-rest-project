@@ -65,8 +65,14 @@ class TestViews:
 
     def test_viewsets_are_wired_to_their_serializer(self, context):
         source = render("core/views.py.j2", context)
-        assert "queryset = AlbumTrack.objects.all()" in source
         assert "serializer_class = AlbumTrackSerializer" in source
+
+    def test_querysets_are_ordered_for_stable_pagination(self, context):
+        # Sem order_by, o DRF emite UnorderedObjectListWarning e as paginas
+        # podem repetir ou pular registros.
+        source = render("core/views.py.j2", context)
+        assert 'queryset = AlbumTrack.objects.all().order_by("pk")' in source
+        assert 'queryset = Artist.objects.all().order_by("pk")' in source
 
 
 class TestUrls:

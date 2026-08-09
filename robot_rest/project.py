@@ -30,7 +30,13 @@ PROJECT_TEMPLATES = {
     "project/tests/settingstest.py.j2": "{package}/tests/settingstest.py",
     "project/tests/test_rest_api.py.j2": "{package}/tests/test_rest_api.py",
     "project/requirements.txt.j2": "requirements.txt",
+    "project/env.j2": ".env",
+    "project/env.example.j2": ".env.example",
+    "project/gitignore.j2": ".gitignore",
 }
+
+#: Arquivos gerados que contem segredos e nao devem ficar legiveis a todos.
+SECRET_FILES = (".env",)
 
 #: Templates do app ``core``, renderizados a partir dos modelos descobertos.
 CORE_TEMPLATES = {
@@ -108,6 +114,12 @@ def render_project(project_dir: Path, config: ProjectConfig, models: list[Discov
     for template_name, output in {**PROJECT_TEMPLATES, **CORE_TEMPLATES}.items():
         destination = project_dir / output.format(package=config.project_name)
         render_to(template_name, destination, context, environment)
+
+    # O .env carrega senha do banco e SECRET_KEY.
+    for name in SECRET_FILES:
+        secret_file = project_dir / name
+        if secret_file.exists():
+            secret_file.chmod(0o600)
 
 
 def generate(config: ProjectConfig, destination: Path | None = None) -> GenerationResult:

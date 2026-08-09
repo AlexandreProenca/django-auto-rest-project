@@ -1,48 +1,12 @@
 # coding: utf-8
-from .defaults import *
+"""Configuracao de desenvolvimento."""
 
-# SECURITY WARNING: don't run with debug turned on in production!
+from .defaults import *  # noqa: F403
+
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS continua vindo do .env: uma fonte de verdade so.
+# Com DEBUG=True o Django ja libera localhost automaticamente.
 
-# DATABASES = {
-#      'default': {
-#          'ENGINE': 'django.db.backends.sqlite3',
-#          'NAME': 'dev_db',
-#      }
-# }
-
-DATABASES = {
-    'default': {
-        'ENGINE': '{{ database.ENGINE }}',
-        'NAME': '{{ database.NAME }}',
-        'USER': '{{ database.USER }}',
-        'PASSWORD': '{{ database.PASSWORD }}',
-        'HOST': '{{ database.HOST }}',
-        'PORT': '{{ database.PORT }}',
-    }
-}
-
-
-# Django Restframework configuration
-REST_FRAMEWORK = {
-
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'oauth2_provider.ext.rest_framework.OAuth2Authentication',
-        'rest_framework_social_oauth2.authentication.SocialAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-    ),
-
-    'DEFAULT_PERMISSION_CLASSES':(
-        #'rest_framework.permissions.IsAuthenticated',
-        'rest_framework.permissions.AllowAny',
-    ),
-
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
-}
-
-
+# Em desenvolvimento os e-mails vao para o console.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

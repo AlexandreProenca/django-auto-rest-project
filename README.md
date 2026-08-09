@@ -119,44 +119,43 @@ generation finishes.
         └── wsgi.py
 
 
-###Packages that will be installed
+###Packages installed in the generated project
 
-    cached-property (1.2.0)
-    Django (1.8.4)
-    django-admin-bootstrapped (2.5.5)
-    django-auto-rest-project (0.1.1)
-    django-braces (1.8.1)
-    django-cors-headers (1.1.0)
-    django-drf-file-generator (0.1.0)
-    django-filter (0.11.0)
-    django-jet (0.0.9)
-    django-oauth-toolkit (0.9.0)
-    django-rest-auth (0.5.0)
-    django-rest-swagger (0.3.4)
-    django-url-filter (0.2.0)
-    djangorestframework (3.2.3)
-    enum34 (1.0.4)
-    funcsigs (0.4)
-    Markdown (2.6.2)
-    mock (1.3.0)
-    MySQL-python (1.2.5)
-    oauthlib (1.0.1)
-    pbr (1.7.0)
-    python-memcached (1.57)
-    PyYAML (3.11)
-    setuptools (3.6)
-    simplejson (3.8.0)
-    six (1.9.0)
-    wsgiref (0.1.2)
-    yet-another-django-profiler (1.0.0)
+    Django
+    djangorestframework
+    django-cors-headers
+    django-filter
+    drf-spectacular
+    django-environ
+    mysqlclient            (or psycopg, depending on the database)
+
+Six packages instead of the 27 older versions pulled in. Optional additions
+are listed as comments in the generated `requirements.txt` (dj-rest-auth,
+django-oauth-toolkit, django-unfold).
+
+Nothing is installed into your environment by `robot_rest` itself -- the
+generated project ships this list and you install it where you want.
 
 ###Urls that will be created
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^docs/', include('rest_framework_swagger.urls')),
-    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^', include('core.urls')),
-    
+
+    admin/                  Django admin
+    accounts/               login, logout and password reset (Django built-ins)
+    api-auth/               session login for the DRF browsable API
+    v1/                     one REST route per table, from core/urls.py
+    v1/token-auth/          POST username+password, get an API token
+    v1/schema/              OpenAPI 3 schema
+    v1/docs/                Swagger UI
+    v1/redoc/               ReDoc
+
+###Configuration
+
+Connection details and the generated `SECRET_KEY` are written to `.env`
+(mode 600, already listed in the generated `.gitignore`) -- never into a
+Python file. `.env.example` documents every supported variable.
+
+`settings/` is split into `defaults`, `dev`, `production` and `tests`.
+`python manage.py check --deploy` passes with the production settings.
+
 ###Requirements
     Python 3.10+ (to run the robot_rest command)
     MySQL database to introspect

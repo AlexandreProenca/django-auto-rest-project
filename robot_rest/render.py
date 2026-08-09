@@ -16,6 +16,20 @@ TEMPLATES_DIR = PACKAGE_DIR / "templates"
 TEMPLATE_SUFFIX = ".j2"
 
 
+def envquote(value: object) -> str:
+    """
+    Torna um valor seguro para uma linha de arquivo ``.env``.
+
+    Senhas podem conter ``#``, espacos ou aspas, que quebrariam o parser do
+    django-environ. Aspas duplas com escape resolvem os tres casos.
+    """
+    text = "" if value is None else str(value)
+    if text == "":
+        return ""
+    escaped = text.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
 def build_environment(templates_dir: Path | None = None) -> Environment:
     """
     Monta o ambiente Jinja2 usado para gerar codigo Python.
@@ -24,7 +38,7 @@ def build_environment(templates_dir: Path | None = None) -> Environment:
     em vez de gravar um arquivo silenciosamente incompleto. ``autoescape``
     fica desligado porque a saida e codigo Python, nao HTML.
     """
-    return Environment(
+    environment = Environment(
         loader=FileSystemLoader(str(templates_dir or TEMPLATES_DIR)),
         undefined=StrictUndefined,
         keep_trailing_newline=True,
@@ -32,6 +46,8 @@ def build_environment(templates_dir: Path | None = None) -> Environment:
         lstrip_blocks=True,
         autoescape=False,
     )
+    environment.filters["envquote"] = envquote
+    return environment
 
 
 def render(template_name: str, context: dict, environment: Environment | None = None) -> str:

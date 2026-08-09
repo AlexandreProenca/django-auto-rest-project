@@ -126,6 +126,19 @@ def report(result, stream=sys.stdout) -> None:
     print("  python manage.py createsuperuser", file=stream)
     print("  python manage.py runserver", file=stream)
 
+    print("\nDepois de subir o servidor:", file=stream)
+    print("  http://127.0.0.1:8000/v1/docs/    documentacao (Swagger UI)", file=stream)
+    print("  http://127.0.0.1:8000/v1/schema/  schema OpenAPI", file=stream)
+    print("  http://127.0.0.1:8000/admin/      admin do Django", file=stream)
+    print("  POST /v1/token-auth/ com usuario e senha devolve o token da API.", file=stream)
+
+    print(f"\nA conexao com o banco e a SECRET_KEY ficaram em {project_dir.name}/.env", file=stream)
+    print("(modo 600, e ja listado no .gitignore -- nao versione esse arquivo).", file=stream)
+    print(
+        f"Testes: python manage.py test --settings={project_dir.name}.settings.tests",
+        file=stream,
+    )
+
 
 def main(argv: list[str] | None = None) -> int:
     """

@@ -18,7 +18,9 @@ from .serializers import (
 {% for model in models %}
 
 class {{ model.name }}ViewSet(viewsets.ModelViewSet):
-    queryset = {{ model.name }}.objects.all()
+    # order_by explicito: paginar queryset sem ordenacao devolve paginas
+    # inconsistentes (UnorderedObjectListWarning do DRF).
+    queryset = {{ model.name }}.objects.all().order_by("pk")
     serializer_class = {{ model.name }}Serializer
 
 {% endfor %}
