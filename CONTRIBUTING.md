@@ -47,6 +47,21 @@ ports:
 ROBOT_REST_TEST_MYSQL=1 ROBOT_REST_TEST_POSTGRES=1 python -m pytest
 ```
 
+### Trying changes by hand
+
+There is a separate demo database, behind a compose profile, with a fuller
+schema and real data:
+
+```bash
+docker compose --profile demo up -d --wait mysql-demo
+robot_rest -ip 127.0.0.1 -port 13307 -user demo -database loja -project lojaapi
+```
+
+Keep it separate from the test fixture. The integration tests assert on the
+exact models the test database produces, so enriching
+`docker/initdb/mysql.sql` breaks them; put new sample data in
+`docker/initdb/demo-mysql.sql` instead.
+
 ## How the project is laid out
 
 `robot_rest` is a code generator, not a Django app.

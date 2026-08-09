@@ -161,8 +161,25 @@ docker run --rm -v "$PWD/out:/work" --user "$(id -u):$(id -g)" robot-rest \
 
 The generated project lands in `./out`, owned by you rather than root.
 
-`docker-compose.yml` brings up MySQL and PostgreSQL seeded with a fixture
-schema, for running the integration suite:
+### Try it without a database of your own
+
+`docker compose` ships a demo MySQL already populated with a small store
+schema — 8 tables, foreign keys, an N:N join, and enough rows to see the API
+paginate:
+
+```bash
+docker compose --profile demo up -d --wait mysql-demo
+robot_rest -ip 127.0.0.1 -port 13307 -user demo -database loja -project lojaapi
+```
+
+That gives you `category`, `product`, `customer`, `customer_address`,
+`customer_order`, `order_item`, `tag` and `product_tag` — so
+`/v1/product/` returns 25 rows across 3 pages, and `/v1/customer-order/`
+shows foreign keys resolved.
+
+Password is `demopass`. Tear it down with `docker compose --profile demo down -v`.
+
+### Running the integration suite
 
 ```bash
 docker compose up -d --wait

@@ -51,6 +51,9 @@ interpreter, and its generated project targeted the Django 1.8 era.
   cleanly when no database is reachable.
 - CI jobs that run the integration suite and generate a project through the
   built image. Both gate the release.
+- A demo MySQL database behind the `demo` compose profile, populated with a
+  store schema (8 tables, foreign keys, an N:N join, 25 products) so the tool
+  can be tried without supplying a database.
 
 ### Changed
 

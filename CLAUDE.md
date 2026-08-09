@@ -153,6 +153,11 @@ Known gaps, in rough priority order:
 
 That inner container is not a convenience — it is the only way most machines can exercise the MySQL path at all, because `mysqlclient` needs MySQL's C client library and fails to build without it. The `test` stage of the [Dockerfile](Dockerfile) builds it on Debian where that library exists.
 
+There are **two separate databases**, deliberately:
+
+- `mysql` / `postgres` — the minimal test fixture (`customer`, `order_item`). The integration tests assert on exactly the models it produces, so adding tables here breaks them.
+- `mysql-demo`, behind the `demo` profile on port 13307 — a fuller store schema with real data, for trying the tool by hand. Sample data belongs here.
+
 Two details worth preserving:
 
 - The fixture password contains `#`. That is deliberate: unquoted, `django-environ` would read the rest of the `.env` line as a comment, and the generated project would connect with a truncated password. `render.envquote` is what prevents it, and the integration tests assert the round trip.

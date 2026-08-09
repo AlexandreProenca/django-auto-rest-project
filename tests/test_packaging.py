@@ -78,6 +78,42 @@ def test_console_script_points_at_the_cli():
     assert config["project"]["scripts"]["robot_rest"] == "robot_rest.cli:main"
 
 
+#: Fixtures SQL usadas pelos containers.
+INITDB_DIR = REPO_ROOT / "docker" / "initdb"
+
+
+@pytest.mark.parametrize("fixture", sorted(p.name for p in INITDB_DIR.glob("*.sql")))
+def test_initdb_fixture_is_mounted_by_compose(fixture):
+    # Um arquivo renomeado e esquecido aqui vira um banco vazio, e o erro so
+    # aparece quando alguem tenta usar o container.
+    compose = (REPO_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    assert f"docker/initdb/{fixture}" in compose
+
+
+def test_demo_fixture_creates_the_documented_tables():
+    # O README promete estas tabelas ao leitor que subir o demo.
+    sql = (INITDB_DIR / "demo-mysql.sql").read_text(encoding="utf-8")
+    expected = {
+        "category",
+        "customer",
+        "customer_address",
+        "customer_order",
+        "order_item",
+        "product",
+        "product_tag",
+        "tag",
+    }
+    created = set(re.findall(r"CREATE TABLE (\w+)", sql))
+    assert created == expected
+
+
+def test_demo_fixture_has_enough_rows_to_paginate():
+    # O valor do demo esta em ver a paginacao funcionando: PAGE_SIZE e 10.
+    sql = (INITDB_DIR / "demo-mysql.sql").read_text(encoding="utf-8")
+    products = sql.split("INSERT INTO product (", 1)[1].split(";", 1)[0]
+    assert products.count("'SKU-") > 10
+
+
 def test_version_is_consistent_across_files():
     # A versao vive em robot_rest/__init__.py; o bumpversion guarda uma copia.
     # Se as duas divergirem, o proximo bump volta para a versao errada.
