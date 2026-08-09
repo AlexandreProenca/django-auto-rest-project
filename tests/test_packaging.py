@@ -78,6 +78,36 @@ def test_console_script_points_at_the_cli():
     assert config["project"]["scripts"]["robot_rest"] == "robot_rest.cli:main"
 
 
+def test_version_is_consistent_across_files():
+    # A versao vive em robot_rest/__init__.py; o bumpversion guarda uma copia.
+    # Se as duas divergirem, o proximo bump volta para a versao errada.
+    import robot_rest
+
+    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
+        config = tomllib.load(handle)
+    assert config["tool"]["bumpversion"]["current_version"] == robot_rest.__version__
+
+
+def test_changelog_mentions_the_current_version():
+    import robot_rest
+
+    changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert f"[{robot_rest.__version__}]" in changelog
+
+
+def test_readme_documents_every_cli_option():
+    # O README ja ficou desatualizado em relacao a CLI mais de uma vez.
+    from robot_rest.cli import build_parser
+
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    documented = []
+    for action in build_parser()._actions:
+        flags = [flag for flag in action.option_strings if flag.startswith("-")]
+        if flags and not any(flag in readme for flag in flags):
+            documented.append(flags[0])
+    assert documented == [], f"opcoes ausentes do README: {documented}"
+
+
 def test_drf_gen_is_not_a_dependency():
     # A dependencia morta que o Phase 1 removeu.
     with (REPO_ROOT / "pyproject.toml").open("rb") as handle:

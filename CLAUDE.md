@@ -44,11 +44,13 @@ Build and verify a distribution:
 python -m build && python -m twine check dist/*
 ```
 
-Version bump — single source of truth is `__version__` in [robot_rest/__init__.py](robot_rest/__init__.py); `[tool.bumpversion]` in pyproject also commits and tags:
+Version bump — single source of truth is `__version__` in [robot_rest/__init__.py](robot_rest/__init__.py), with a copy in `[tool.bumpversion]` that a test keeps in sync:
 
 ```bash
 bump-my-version bump patch
 ```
+
+Note this **commits and tags**, and pushing that tag triggers the PyPI publish job. Treat it as a release action, not a routine edit.
 
 CI is [.github/workflows/ci.yml](.github/workflows/ci.yml): lint, a pytest matrix on Python 3.10–3.13, a build job that asserts every `.j2` template survives into the wheel, and a tag-triggered PyPI publish via trusted publishing (no secrets — needs the publisher configured on pypi.org).
 
@@ -126,12 +128,20 @@ Generated URLs: `admin/`, `accounts/` (Django's built-in auth views), `api-auth/
 
 ## Modernization status
 
-Phases 0–3 are done. The tool runs on Python 3.10+, owns its codegen, and generates a project that boots on Django 5.2 and serves a working API.
+Phases 0–4 are complete; the project is at 1.0.0 (unreleased — no tag pushed).
 
 Verified against **live databases**, not just fixtures: SQLite and PostgreSQL 16 both go schema → generated project → `pip install -r requirements.txt` → `migrate` → generated tests → live CRUD (including a foreign key) → OpenAPI schema. MySQL shares the identical code path but has not been exercised against a live server here.
 
-Remaining:
+Docs are guarded by tests rather than trust: [tests/test_packaging.py](tests/test_packaging.py) asserts the version matches across files, that `CHANGELOG.md` mentions the current version, and that every CLI option appears in the README. That last one exists because the README silently drifted from the CLI more than once during this work.
 
-- Phase 4: rewrite the README. It still carries stale badges (Codacy, readthedocs, StackShare, Gitter) and points at a `docs/` site that does not exist.
-- The generated `requirements.txt` pins loose ranges (`Django>=4.2,<6.0`). No lockfile.
+Known gaps, in rough priority order:
+
+- **MySQL is untested against a live server.** Same code path as PostgreSQL, but worth a real run before announcing 1.0.0.
 - `DJANGO_SYSTEM_TABLES` covers `django.contrib` and `authtoken`. Tables from a third-party Django app in the same database are still introspected.
+- The generated `requirements.txt` pins loose ranges (`Django>=4.2,<6.0`). No lockfile.
+- Generated serializers use `fields = "__all__"`. Fine for a scaffold, but it means a new database column is exposed automatically.
+- CI has no job that boots a generated project. The end-to-end tests cover generation and the generated test suite, but the "does it actually serve traffic" check has only ever been run by hand.
+
+### Releasing
+
+`.github/workflows/ci.yml` publishes to PyPI on a pushed tag via trusted publishing. That requires the publisher to be configured on pypi.org first — it has never run, so the first release will need that set up.

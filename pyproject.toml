@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
     "Framework :: Django",
     "Intended Audience :: Developers",
@@ -90,7 +90,7 @@ extend-exclude = ["tests/golden"]
 select = ["E", "F", "W", "I", "UP", "B", "C4"]
 
 [tool.bumpversion]
-current_version = "0.5.4"
+current_version = "1.0.0"
 commit = true
 tag = true
 

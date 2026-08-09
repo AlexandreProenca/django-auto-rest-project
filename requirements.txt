@@ -1,4 +1,0 @@
-Django
-pytest==2.7.2
-djangorestframework
-django-drf-file-generator
