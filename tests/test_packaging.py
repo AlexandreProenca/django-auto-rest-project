@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from robot_rest.project import CORE_TEMPLATES, PROJECT_TEMPLATES
+from robot_rest.project import AUTH_TEMPLATES, CORE_TEMPLATES, PROJECT_TEMPLATES
 from robot_rest.render import TEMPLATES_DIR, iter_template_names
 
 if sys.version_info >= (3, 11):
@@ -48,13 +48,13 @@ def test_template_is_covered_by_package_data(name):
     assert matched, f"{relative} nao esta coberto por package-data em pyproject.toml"
 
 
-@pytest.mark.parametrize("template_name", sorted({**PROJECT_TEMPLATES, **CORE_TEMPLATES}))
+@pytest.mark.parametrize("template_name", sorted({**PROJECT_TEMPLATES, **CORE_TEMPLATES, **AUTH_TEMPLATES}))
 def test_referenced_template_exists(template_name):
     assert (TEMPLATES_DIR / template_name).is_file()
 
 
 def test_every_template_on_disk_is_referenced():
-    referenced = set({**PROJECT_TEMPLATES, **CORE_TEMPLATES})
+    referenced = set({**PROJECT_TEMPLATES, **CORE_TEMPLATES, **AUTH_TEMPLATES})
     assert set(TEMPLATE_NAMES) == referenced
 
 

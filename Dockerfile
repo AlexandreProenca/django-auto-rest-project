@@ -61,5 +61,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /src
 COPY tests ./tests
 COPY CHANGELOG.md CONTRIBUTING.md ./
+# Os testes de empacotamento conferem que cada fixture SQL esta montada no
+# compose, entao os dois precisam existir tambem dentro da imagem.
+COPY docker ./docker
+COPY docker-compose.yml ./
 
 CMD ["python", "-m", "pytest", "-q"]

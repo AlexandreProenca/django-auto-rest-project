@@ -1,0 +1,15 @@
+{% raw %}{% extends "base.html" %}
+{% block title %}Ativar conta{% endblock %}
+{% block heading %}Ativar conta{% endblock %}
+{% block content %}
+  {% if activation_error %}
+    <p class="errorlist">{{ activation_error.message }}</p>
+    <p><a href="{% url 'django_registration_register' %}">Cadastrar de novo</a></p>
+  {% else %}
+    <p>Confirme para ativar sua conta.</p>
+    <form method="post">{% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Ativar minha conta</button>
+    </form>
+  {% endif %}
+{% endblock %}{% endraw %}

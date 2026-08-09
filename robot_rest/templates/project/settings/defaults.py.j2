@@ -40,8 +40,14 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "drf_spectacular",
+{% if auth_enabled %}
+    # Cadastro com confirmacao por e-mail. Login, logout e recuperacao de
+    # senha vem do proprio django.contrib.auth.
+    "django_registration",
+{% endif %}
     "core",
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -54,13 +60,26 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+{% if auth_enabled %}
+# Dias de validade do link de ativacao enviado por e-mail.
+ACCOUNT_ACTIVATION_DAYS = env.int("ACCOUNT_ACTIVATION_DAYS", default=7)
+
+# Deixe False para fechar o cadastro sem mexer nas rotas.
+REGISTRATION_OPEN = env.bool("REGISTRATION_OPEN", default=True)
+
+# Depois de entrar, cai na raiz da API (o DefaultRouter lista as rotas).
+# Apontar para "/" daria 404: o projeto gerado nao tem view na raiz.
+LOGIN_REDIRECT_URL = "/v1/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
+{% endif %}
+
 ROOT_URLCONF = "{{ project_name }}.urls"
 WSGI_APPLICATION = "{{ project_name }}.wsgi.application"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -131,6 +150,3 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"
-
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/"

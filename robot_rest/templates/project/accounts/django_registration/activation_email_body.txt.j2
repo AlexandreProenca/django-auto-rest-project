@@ -1,0 +1,9 @@
+{% raw %}Ola,
+
+Para ativar sua conta em {{ site }}, acesse:
+
+{{ scheme }}://{{ site.domain }}{% url 'django_registration_activate' %}?activation_key={{ activation_key }}
+
+O link vale por {{ expiration_days }} dias.
+
+Se nao foi voce quem pediu o cadastro, ignore esta mensagem.{% endraw %}

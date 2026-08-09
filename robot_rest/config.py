@@ -151,6 +151,9 @@ class ProjectConfig:
     project_name: str
     database: DatabaseConfig
     secret_key: str = field(default_factory=generate_secret_key)
+    #: Cadastro, login e recuperacao de senha via API. Ligado por padrao:
+    #: e o motivo de existir do projeto, nao um extra.
+    auth_enabled: bool = True
 
     def __post_init__(self) -> None:
         validate_project_name(self.project_name)
@@ -163,4 +166,5 @@ class ProjectConfig:
             "project_name": self.project_name,
             "secret_key": self.secret_key,
             "database": self.database.as_django_dict(),
+            "auth_enabled": self.auth_enabled,
         }

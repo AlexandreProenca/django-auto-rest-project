@@ -1,0 +1,135 @@
+# coding: utf-8
+"""
+Testes das paginas de conta: cadastro, ativacao, login e senha.
+
+Usam o backend de e-mail em memoria (settings/tests.py), entao o link de
+ativacao e o de recuperacao sao lidos direto de mail.outbox.
+"""
+
+import re
+
+from django.contrib.auth import get_user_model
+from django.core import mail
+from django.test import TestCase
+from django.urls import reverse
+
+SENHA = "Sup3rSenha!2026"
+NOVA_SENHA = "OutraSenha!2026"
+
+
+def activation_link(body):
+    return re.search(r"/accounts/activate/\?activation_key=\S+", body).group(0)
+
+
+class TestCadastro(TestCase):
+    def test_pagina_de_cadastro_responde(self):
+        self.assertEqual(self.client.get(reverse("django_registration_register")).status_code, 200)
+
+    def test_cadastro_cria_conta_inativa_e_envia_email(self):
+        response = self.client.post(
+            reverse("django_registration_register"),
+            {"username": "maria", "email": "maria@example.com", "password1": SENHA, "password2": SENHA},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        user = get_user_model().objects.get(username="maria")
+        self.assertFalse(user.is_active, "a conta so pode ativar depois de confirmar o e-mail")
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_ativacao_libera_a_conta(self):
+        self.client.post(
+            reverse("django_registration_register"),
+            {"username": "maria", "email": "maria@example.com", "password1": SENHA, "password2": SENHA},
+        )
+        link = activation_link(mail.outbox[0].body)
+        key = link.split("activation_key=")[1]
+
+        # A ativacao acontece no POST: assim um leitor automatico de e-mail
+        # nao ativa a conta so por seguir o link.
+        self.assertEqual(self.client.get(link).status_code, 200)
+        self.assertEqual(self.client.post(reverse("django_registration_activate"), {"activation_key": key}).status_code, 302)
+
+        user = get_user_model().objects.get(username="maria")
+        self.assertTrue(user.is_active)
+
+    def test_chave_de_ativacao_invalida_nao_ativa(self):
+        self.client.post(
+            reverse("django_registration_register"),
+            {"username": "maria", "email": "maria@example.com", "password1": SENHA, "password2": SENHA},
+        )
+        response = self.client.post(reverse("django_registration_activate"), {"activation_key": "chave-falsa"})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(get_user_model().objects.get(username="maria").is_active)
+
+
+class TestLogin(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("maria", "maria@example.com", SENHA)
+
+    def test_login_redireciona_para_a_api(self):
+        response = self.client.post(
+            reverse("login"), {"username": "maria", "password": SENHA}, follow=True
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_senha_errada_nao_entra(self):
+        self.client.post(reverse("login"), {"username": "maria", "password": "errada"})
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_logout(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse("logout"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_token_da_api(self):
+        response = self.client.post(
+            reverse("token-auth"),
+            {"username": "maria", "password": SENHA},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("token", response.json())
+
+
+class TestRecuperacaoDeSenha(TestCase):
+    def setUp(self):
+        get_user_model().objects.create_user("maria", "maria@example.com", SENHA)
+
+    def test_pedido_envia_email(self):
+        response = self.client.post(reverse("password_reset"), {"email": "maria@example.com"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_link_permite_definir_nova_senha(self):
+        self.client.post(reverse("password_reset"), {"email": "maria@example.com"})
+        link = re.search(r"/accounts/reset/\S+", mail.outbox[0].body).group(0)
+
+        # O primeiro GET redireciona para a URL com o token na sessao.
+        response = self.client.get(link, follow=True)
+        form_url = response.redirect_chain[-1][0]
+        self.client.post(form_url, {"new_password1": NOVA_SENHA, "new_password2": NOVA_SENHA})
+
+        self.assertTrue(self.client.login(username="maria", password=NOVA_SENHA))
+
+    def test_email_desconhecido_nao_vaza_a_existencia_da_conta(self):
+        response = self.client.post(reverse("password_reset"), {"email": "ninguem@example.com"})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 0)
+
+
+class TestTrocaDeSenha(TestCase):
+    def test_exige_login(self):
+        response = self.client.get(reverse("password_change"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_troca_a_senha(self):
+        user = get_user_model().objects.create_user("maria", "maria@example.com", SENHA)
+        self.client.force_login(user)
+        response = self.client.post(
+            reverse("password_change"),
+            {"old_password": SENHA, "new_password1": NOVA_SENHA, "new_password2": NOVA_SENHA},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.client.logout()
+        self.assertTrue(self.client.login(username="maria", password=NOVA_SENHA))

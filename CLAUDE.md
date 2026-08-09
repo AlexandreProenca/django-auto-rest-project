@@ -122,7 +122,19 @@ Split-settings package under `<project>/settings/`, all values from the environm
 
 Three untracked-by-default files are also generated: `.env` (chmod 600, holds the DB password and `SECRET_KEY`), `.env.example`, and `.gitignore` that excludes `.env`.
 
-Generated URLs: `admin/`, `accounts/` (Django's built-in auth views), `api-auth/`, `v1/` (routes from `core.urls`), `v1/token-auth/`, `v1/schema/`, `v1/docs/`, `v1/redoc/`.
+Generated URLs: `admin/`, `accounts/` (sign up, activation, login, password reset), `api-auth/`, `v1/` (routes from `core.urls`), `v1/token-auth/`, `v1/schema/`, `v1/docs/`, `v1/redoc/`.
+
+### Accounts
+
+On by default (`--no-auth` opts out), via `django-registration` 5.x plus `django.contrib.auth`. Three things here are easy to get wrong:
+
+- **`django-registration` ships no templates**, and `django.contrib.auth` has no `registration/login.html` either. Without the generated `templates/` tree the pages raise `TemplateDoesNotExist` on first visit — in production, not at `check` time. `AUTH_TEMPLATES` in [project.py](robot_rest/project.py) is the full list; `tests/test_auth.py` pins the exact names the packages look up.
+- **Activation is a POST in 5.x.** The route is `accounts/activate/` with *no* key in the path; the key arrives as `?activation_key=`, and the view renders `activation_form.html` for the user to confirm, so email scanners can't activate an account by following a link. Building the old path-style URL fails with `NoReverseMatch` when the email renders.
+- `LOGIN_REDIRECT_URL` must not be `/`. The generated project has no view at the root, so login used to land on a 404. It points at `/v1/` (the DRF router's API root); logout points at the login page.
+
+### Broken-model pruning
+
+Filtering Django's own tables can strip the target of a third-party table's foreign key — `socialaccount_socialapp_sites` referencing `django_site`, for example. The leftover model fails with `fields.E300`/`E307` and the project won't start. `prune_broken_models` drops any model referencing a name that isn't defined in the file, iterating to a fixpoint so cascading dependents go too, and the CLI reports what it removed.
 
 ### Constraints worth knowing
 

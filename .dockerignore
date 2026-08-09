@@ -9,7 +9,6 @@ build
 dist
 .pytest_cache
 .ruff_cache
-docker-compose.yml
 Dockerfile
 CLAUDE.md
 out

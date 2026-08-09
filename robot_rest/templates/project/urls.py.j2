@@ -11,11 +11,21 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Login/logout/password reset prontos do Django.
+{% if auth_enabled %}
+    # Cadastro com ativacao por e-mail (django-registration).
+    #   /accounts/register/                cria a conta e envia o e-mail
+    #   /accounts/activate/<key>/          confirma a conta
+    # Para cadastro imediato, sem e-mail, troque 'activation' por 'one_step'.
+    path("accounts/", include("django_registration.backends.activation.urls")),
+{% endif %}
+    # Login, logout, troca e recuperacao de senha, do proprio Django:
+    #   /accounts/login/  /accounts/logout/
+    #   /accounts/password_change/  /accounts/password_reset/
     path("accounts/", include("django.contrib.auth.urls")),
     # Login de sessao da API navegavel do DRF.
     path("api-auth/", include("rest_framework.urls")),
     path("v1/", include("core.urls")),
+    # Clientes de API trocam usuario e senha por um token aqui.
     path("v1/token-auth/", obtain_auth_token, name="token-auth"),
     path("v1/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("v1/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

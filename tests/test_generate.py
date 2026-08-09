@@ -277,6 +277,7 @@ class TestGeneratedRequirements:
                 "secret_key": "k",
                 "database": DatabaseConfig(name="d", engine=engine).as_django_dict(),
                 "models": [],
+                "auth_enabled": True,
             },
         )
 

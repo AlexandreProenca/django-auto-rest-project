@@ -14,7 +14,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import ProjectConfig
-from .introspect import DiscoveredModel, discover_models, introspect_schema, set_managed
+from .introspect import (
+    DiscoveredModel,
+    discover_models,
+    introspect_schema,
+    prune_broken_models,
+    set_managed,
+)
 from .render import build_environment, render_to
 
 #: Templates do projeto -> caminho de saida, relativo a raiz do projeto.
@@ -33,6 +39,57 @@ PROJECT_TEMPLATES = {
     "project/env.j2": ".env",
     "project/env.example.j2": ".env.example",
     "project/gitignore.j2": ".gitignore",
+}
+
+#: Templates das paginas de conta. So sao renderizados com auth habilitado.
+#:
+#: O django-registration nao distribui templates -- sem estes arquivos as
+#: paginas de cadastro e ativacao respondem TemplateDoesNotExist na primeira
+#: visita, e o usuario so descobre em producao.
+AUTH_TEMPLATES = {
+    "project/accounts/test_accounts.py.j2": "{package}/tests/test_accounts.py",
+    "project/accounts/base.html.j2": "templates/base.html",
+    "project/accounts/registration/login.html.j2": "templates/registration/login.html",
+    "project/accounts/registration/logged_out.html.j2": "templates/registration/logged_out.html",
+    "project/accounts/registration/password_reset_form.html.j2": (
+        "templates/registration/password_reset_form.html"
+    ),
+    "project/accounts/registration/password_reset_done.html.j2": (
+        "templates/registration/password_reset_done.html"
+    ),
+    "project/accounts/registration/password_reset_confirm.html.j2": (
+        "templates/registration/password_reset_confirm.html"
+    ),
+    "project/accounts/registration/password_reset_complete.html.j2": (
+        "templates/registration/password_reset_complete.html"
+    ),
+    "project/accounts/registration/password_change_form.html.j2": (
+        "templates/registration/password_change_form.html"
+    ),
+    "project/accounts/registration/password_change_done.html.j2": (
+        "templates/registration/password_change_done.html"
+    ),
+    "project/accounts/django_registration/registration_form.html.j2": (
+        "templates/django_registration/registration_form.html"
+    ),
+    "project/accounts/django_registration/registration_complete.html.j2": (
+        "templates/django_registration/registration_complete.html"
+    ),
+    "project/accounts/django_registration/registration_closed.html.j2": (
+        "templates/django_registration/registration_closed.html"
+    ),
+    "project/accounts/django_registration/activation_complete.html.j2": (
+        "templates/django_registration/activation_complete.html"
+    ),
+    "project/accounts/django_registration/activation_form.html.j2": (
+        "templates/django_registration/activation_form.html"
+    ),
+    "project/accounts/django_registration/activation_email_subject.txt.j2": (
+        "templates/django_registration/activation_email_subject.txt"
+    ),
+    "project/accounts/django_registration/activation_email_body.txt.j2": (
+        "templates/django_registration/activation_email_body.txt"
+    ),
 }
 
 #: Arquivos gerados que contem segredos e nao devem ficar legiveis a todos.
@@ -62,6 +119,8 @@ class GenerationResult:
     models: list[DiscoveredModel]
     managed: bool = False
     skipped_tables: tuple[str, ...] = ()
+    auth_enabled: bool = True
+    dropped_models: tuple[str, ...] = ()
 
     @property
     def model_count(self) -> int:
@@ -113,7 +172,11 @@ def render_project(project_dir: Path, config: ProjectConfig, models: list[Discov
     context = config.as_template_context()
     context["models"] = models
 
-    for template_name, output in {**PROJECT_TEMPLATES, **CORE_TEMPLATES}.items():
+    wanted = {**PROJECT_TEMPLATES, **CORE_TEMPLATES}
+    if config.auth_enabled:
+        wanted.update(AUTH_TEMPLATES)
+
+    for template_name, output in wanted.items():
         destination = project_dir / output.format(package=config.project_name)
         render_to(template_name, destination, context, environment)
 
@@ -152,6 +215,10 @@ def generate(
     # driver e o caso comum, e nao deve deixar nada no disco.
     schema = introspect_schema(config.database.as_django_dict(), include_system_tables=include_system_tables)
     models_source = set_managed(schema.models_source, managed)
+    # Uma tabela de terceiros pode referenciar uma das tabelas do Django que
+    # acabaram de ser filtradas; deixar a referencia solta gera um models.py
+    # que nem carrega.
+    models_source, dropped = prune_broken_models(models_source)
     models = discover_models(models_source)
 
     # O projeto e montado em um diretorio temporario e so depois movido para
@@ -179,4 +246,6 @@ def generate(
         models=models,
         managed=managed,
         skipped_tables=schema.skipped_tables,
+        auth_enabled=config.auth_enabled,
+        dropped_models=dropped,
     )

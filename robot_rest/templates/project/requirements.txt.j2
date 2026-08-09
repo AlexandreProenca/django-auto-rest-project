@@ -5,6 +5,9 @@ django-cors-headers>=4.3
 django-filter>=24.1
 drf-spectacular>=0.27
 django-environ>=0.11
+{% if auth_enabled %}
+django-registration>=5.2
+{% endif %}
 {% if database.ENGINE == "django.db.backends.mysql" %}
 mysqlclient>=2.2
 {% elif database.ENGINE == "django.db.backends.postgresql" %}
@@ -12,6 +15,6 @@ psycopg[binary]>=3.1
 {% endif %}
 
 # Opcionais, dependendo do que o projeto precisar:
-#   dj-rest-auth[with-social]  -- registro, login e reset de senha via API
-#   django-oauth-toolkit       -- servidor OAuth2
-#   django-unfold              -- admin com visual moderno
+#   django-allauth              -- login social (Google, GitHub...)
+#   django-oauth-toolkit           -- servidor OAuth2
+#   django-unfold                  -- admin com visual moderno

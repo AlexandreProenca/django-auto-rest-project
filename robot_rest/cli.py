@@ -93,6 +93,12 @@ def build_parser() -> ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--no-auth",
+        action="store_false",
+        dest="auth_enabled",
+        help=("Skip the accounts app (sign up, login, password reset). It is included by default."),
+    )
+    parser.add_argument(
         "--managed",
         action="store_true",
         help=(
@@ -165,7 +171,11 @@ def build_config(args, password: str) -> ProjectConfig:
             engine=engine,
         )
     )
-    return ProjectConfig(project_name=args.project_name, database=database)
+    return ProjectConfig(
+        project_name=args.project_name,
+        database=database,
+        auth_enabled=args.auth_enabled,
+    )
 
 
 def report(result, stream=sys.stdout) -> None:
@@ -194,6 +204,13 @@ def report(result, stream=sys.stdout) -> None:
             file=stream,
         )
 
+    if result.dropped_models:
+        print(
+            f"\nModelos descartados por apontarem para tabelas filtradas "
+            f"({len(result.dropped_models)}): {', '.join(result.dropped_models)}.",
+            file=stream,
+        )
+
     if result.managed:
         print(
             "\nAtencao: os modelos foram marcados como managed = True. O Django passa a\n"
@@ -209,6 +226,17 @@ def report(result, stream=sys.stdout) -> None:
     print("  python manage.py migrate", file=stream)
     print("  python manage.py createsuperuser", file=stream)
     print("  python manage.py runserver", file=stream)
+
+    if result.auth_enabled:
+        print("\nContas (cadastro, login e senha) em /v1/auth/:", file=stream)
+        print("  POST /v1/auth/registration/           cria a conta", file=stream)
+        print("  POST /v1/auth/login/                  devolve o token", file=stream)
+        print("  POST /v1/auth/logout/                 invalida o token", file=stream)
+        print("  GET  /v1/auth/user/                   dados da conta", file=stream)
+        print("  POST /v1/auth/password/change/        troca a senha", file=stream)
+        print("  POST /v1/auth/password/reset/         envia o e-mail", file=stream)
+        print("  POST /v1/auth/password/reset/confirm/ aplica a nova senha", file=stream)
+        print("Em desenvolvimento os e-mails saem no console do runserver.", file=stream)
 
     print("\nDepois de subir o servidor:", file=stream)
     print("  http://127.0.0.1:8000/v1/docs/    documentacao (Swagger UI)", file=stream)

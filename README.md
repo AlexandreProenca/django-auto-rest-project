@@ -101,6 +101,7 @@ usage: robot_rest [-h] [--version] [-vv] [-engine ENGINE] [-ip DATABASE_HOST]
 | `-port` | Database port. Defaults per engine. |
 | `-password` | Database password. Optional — see below. |
 | `--managed` | Hand Django ownership of the schema. Off by default. |
+| `--no-auth` | Skip the accounts pages. They are included by default. |
 | `--all-tables` | Also map Django's own tables. Skipped by default. |
 | `-o`, `--output-dir` | Where to create the project. Defaults to the current directory. |
 | `-vv` | Increase verbosity. |
@@ -143,6 +144,24 @@ superuser — the generated project ships its own `requirements.txt`.
 Django app — including one this tool generated and you then migrated —
 `auth_user` and `django_session` would otherwise be published as REST routes.
 Skipped tables are always listed in the output. `--all-tables` includes them.
+
+**Accounts come built in.** Sign up, activate by email, log in, log out,
+change password and reset a forgotten one all work out of the box, using
+`django-registration` plus Django's own auth views — with templates, so the
+pages render instead of raising `TemplateDoesNotExist`. Pass `--no-auth` to
+leave them out.
+
+| Page | What |
+|---|---|
+| `/accounts/register/` | sign up, sends an activation email |
+| `/accounts/activate/<key>/` | confirm the account |
+| `/accounts/login/`, `/accounts/logout/` | session login |
+| `/accounts/password_reset/` | forgotten password, by email |
+| `/accounts/password_change/` | change while logged in |
+| `/v1/token-auth/` | exchange username + password for an API token |
+
+In development the emails print to the `runserver` console, so you can follow
+the activation and reset links without configuring SMTP.
 
 **Secrets stay out of your source tree.** Connection details and the generated
 `SECRET_KEY` go to `.env` (mode 600, already in the generated `.gitignore`),

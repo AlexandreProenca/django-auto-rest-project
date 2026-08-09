@@ -242,6 +242,9 @@ def run_inspectdb(database: dict[str, str], tables: list[str] | None = None) -> 
     return buffer.getvalue()
 
 
+#: Identificadores em maiuscula que o inspectdb usa e nao sao modelos.
+_SAFE_REFERENCES = frozenset({"True", "False", "None"})
+
 _MANAGED_FALSE = re.compile(r"^(?P<indent>\s*)managed = False\s*$", re.MULTILINE)
 
 
@@ -259,6 +262,80 @@ def set_managed(models_source: str, managed: bool) -> str:
     if not managed:
         return models_source
     return _MANAGED_FALSE.sub(lambda match: f"{match.group('indent')}managed = True", models_source)
+
+
+def _referenced_model_names(node: ast.ClassDef) -> set[str]:
+    """
+    Nomes de modelo citados nos campos de uma classe (FK, O2O, M2M).
+
+    O inspectdb escreve o alvo como identificador nu -- ``models.ForeignKey(
+    Customer, ...)`` -- entao basta olhar os ``Name`` dentro das chamadas.
+    """
+    referenced = set()
+    for statement in node.body:
+        if not isinstance(statement, ast.Assign):
+            continue
+        for inner in ast.walk(statement.value):
+            if isinstance(inner, ast.Name):
+                referenced.add(inner.id)
+    return referenced
+
+
+def prune_broken_models(models_source: str) -> tuple[str, tuple[str, ...]]:
+    """
+    Remove modelos que apontam para outro modelo ausente do arquivo.
+
+    Filtrar as tabelas do Django pode deixar para tras uma tabela de terceiros
+    que referencia uma delas -- por exemplo ``socialaccount_socialapp_sites``
+    apontando para ``django_site``. O models.py resultante nem carrega
+    (fields.E300 / E307), e o projeto gerado nao sobe.
+
+    :return: (fonte sem os modelos quebrados, nomes removidos).
+    """
+    try:
+        tree = ast.parse(models_source)
+    except SyntaxError:
+        return models_source, ()
+
+    classes = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and any(_is_model_base(base) for base in node.bases)
+    }
+
+    # Nomes citados que parecem modelo: comecam com maiuscula. Assim ficam de
+    # fora 'models' (minusculo) e models.DO_NOTHING (Attribute, nao Name).
+    references = {
+        name: {
+            ref for ref in _referenced_model_names(node) if ref[:1].isupper() and ref not in _SAFE_REFERENCES
+        }
+        for name, node in classes.items()
+    }
+
+    alive = set(classes)
+    removed: set[str] = set()
+
+    # Uma regra so: se um alvo nao esta vivo, o modelo esta quebrado. Isso
+    # cobre tanto a tabela filtrada antes quanto o efeito cascata de remover
+    # um modelo do qual outro dependia -- por isso repete ate estabilizar.
+    while True:
+        broken = {name for name in alive if references[name] - alive}
+        if not broken:
+            break
+        alive -= broken
+        removed |= broken
+
+    if not removed:
+        return models_source, ()
+
+    lines = models_source.splitlines(keepends=True)
+    drop = set()
+    for name in removed:
+        node = classes[name]
+        drop.update(range(node.lineno - 1, (node.end_lineno or node.lineno)))
+
+    kept = "".join(line for index, line in enumerate(lines) if index not in drop)
+    return kept, tuple(sorted(removed))
 
 
 def _is_model_base(node: ast.expr) -> bool:
