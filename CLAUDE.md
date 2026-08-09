@@ -26,6 +26,12 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
+Against real MySQL and PostgreSQL (integration tests skip without this):
+
+```bash
+docker compose up -d --wait && docker compose run --rm tests
+```
+
 Single test:
 
 ```bash
@@ -136,11 +142,21 @@ Docs are guarded by tests rather than trust: [tests/test_packaging.py](tests/tes
 
 Known gaps, in rough priority order:
 
-- **MySQL is untested against a live server.** Same code path as PostgreSQL, but worth a real run before announcing 1.0.0.
 - `DJANGO_SYSTEM_TABLES` covers `django.contrib` and `authtoken`. Tables from a third-party Django app in the same database are still introspected.
 - The generated `requirements.txt` pins loose ranges (`Django>=4.2,<6.0`). No lockfile.
-- Generated serializers use `fields = "__all__"`. Fine for a scaffold, but it means a new database column is exposed automatically.
-- CI has no job that boots a generated project. The end-to-end tests cover generation and the generated test suite, but the "does it actually serve traffic" check has only ever been run by hand.
+- Generated serializers use `fields = "__all__"`. Fine for a scaffold, but a new database column is exposed automatically.
+- The "boot the generated project and serve traffic" check is still manual. CI generates a project and asserts its files, but does not start it.
+
+### Containers
+
+[docker-compose.yml](docker-compose.yml) runs MySQL 8.4 and PostgreSQL 16 seeded from [docker/initdb/](docker/initdb/), plus a `tests` service that runs the suite *inside* a container on the database network.
+
+That inner container is not a convenience — it is the only way most machines can exercise the MySQL path at all, because `mysqlclient` needs MySQL's C client library and fails to build without it. The `test` stage of the [Dockerfile](Dockerfile) builds it on Debian where that library exists.
+
+Two details worth preserving:
+
+- The fixture password contains `#`. That is deliberate: unquoted, `django-environ` would read the rest of the `.env` line as a comment, and the generated project would connect with a truncated password. `render.envquote` is what prevents it, and the integration tests assert the round trip.
+- Tests that exercise connection failures use `127.0.0.1:1` (instant refusal), not an unroutable address. An earlier version used TEST-NET, and each test blocked until timeout — the container suite took 226s instead of 1.4s.
 
 ### Releasing
 

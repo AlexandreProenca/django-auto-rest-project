@@ -12,7 +12,7 @@ import pytest
 
 from robot_rest.cli import main
 from robot_rest.config import DatabaseConfig, ProjectConfig
-from robot_rest.introspect import IntrospectionError, run_inspectdb
+from robot_rest.introspect import IntrospectionError, driver_hint, run_inspectdb
 from robot_rest.project import ProjectExistsError, generate
 
 SCHEMA = """
@@ -335,24 +335,44 @@ class TestSafety:
         assert list(tmp_path.iterdir()) == []
 
 
+#: Porta fechada em loopback: recusa na hora, sem esperar timeout.
+#: Um IP inalcancavel deixaria cada um destes testes travado por minutos.
+UNREACHABLE = {"host": "127.0.0.1", "port": "1"}
+
+
 class TestDriverErrors:
-    def test_missing_driver_raises_introspection_error_not_a_traceback(self):
+    def test_connection_failure_raises_introspection_error_not_a_traceback(self):
         # O finally de limpeza ja mascarou este erro com um traceback inteiro.
-        database = DatabaseConfig(name="d", user="u", host="192.0.2.1")
+        database = DatabaseConfig(name="d", user="u", **UNREACHABLE)
         with pytest.raises(IntrospectionError) as excinfo:
             run_inspectdb(database.as_django_dict())
         assert "Nao foi possivel introspectar" in str(excinfo.value)
 
-    def test_missing_driver_suggests_the_extra(self):
-        database = DatabaseConfig(name="d", user="u", host="192.0.2.1")
-        with pytest.raises(IntrospectionError) as excinfo:
-            run_inspectdb(database.as_django_dict())
-        assert "django-auto-rest-project[mysql]" in str(excinfo.value)
+    @pytest.mark.parametrize(
+        ("engine", "extra"),
+        [
+            ("django.db.backends.mysql", "mysql"),
+            ("django.db.backends.postgresql", "postgres"),
+        ],
+    )
+    def test_missing_driver_suggests_the_extra(self, engine, extra):
+        # Funcao pura: a versao anterior so passava quando o driver estava
+        # ausente da maquina, entao quebrava dentro do container de teste.
+        hint = driver_hint(engine, ModuleNotFoundError("No module named 'MySQLdb'"))
+        assert f"django-auto-rest-project[{extra}]" in hint
+
+    def test_no_driver_hint_for_unrelated_errors(self):
+        assert driver_hint("django.db.backends.mysql", RuntimeError("access denied")) == ""
+
+    def test_no_driver_hint_for_sqlite(self):
+        assert driver_hint("django.db.backends.sqlite3", ModuleNotFoundError("no module")) == ""
 
     def test_cli_reports_one_line_instead_of_a_traceback(self, capsys, tmp_path):
         argv = [
             "-ip",
-            "192.0.2.1",
+            UNREACHABLE["host"],
+            "-port",
+            UNREACHABLE["port"],
             "-user",
             "u",
             "-database",

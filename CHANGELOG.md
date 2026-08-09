@@ -43,6 +43,14 @@ interpreter, and its generated project targeted the Django 1.8 era.
 - `--version`.
 - OpenAPI 3 schema, Swagger UI and ReDoc in the generated project.
 - The generated project gets `.env`, `.env.example` and a `.gitignore`.
+- A `Dockerfile` for running the tool as a container, with both database
+  drivers installed and generated files owned by the calling user.
+- `docker-compose.yml` with MySQL and PostgreSQL seeded from a fixture
+  schema, plus a `tests` service that runs the suite against them.
+- Integration tests covering MySQL and PostgreSQL end to end. They skip
+  cleanly when no database is reachable.
+- CI jobs that run the integration suite and generate a project through the
+  built image. Both gate the release.
 
 ### Changed
 

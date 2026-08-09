@@ -25,6 +25,28 @@ ruff check . && ruff format --check .
 The test suite needs no database server: it drives Django's `inspectdb`
 against SQLite fixtures it builds itself.
 
+### Against real databases
+
+The integration tests skip unless a database is reachable. To run them:
+
+```bash
+docker compose up -d --wait
+docker compose run --rm tests
+docker compose down -v
+```
+
+`docker compose run --rm tests` runs the whole suite *inside* a container, on
+the same network as the databases. That is the only way the MySQL path gets
+exercised on most machines, because `mysqlclient` needs MySQL's C client
+library and will not build without it.
+
+To run them from your own shell instead, point the env vars at the published
+ports:
+
+```bash
+ROBOT_REST_TEST_MYSQL=1 ROBOT_REST_TEST_POSTGRES=1 python -m pytest
+```
+
 ## How the project is laid out
 
 `robot_rest` is a code generator, not a Django app.

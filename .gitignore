@@ -114,3 +114,6 @@ crashlytics-build.properties
 # Tooling caches
 .ruff_cache/
 .pytest_cache/
+
+# Saida das geracoes locais de teste
+out/

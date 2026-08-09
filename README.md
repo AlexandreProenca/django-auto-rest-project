@@ -148,6 +148,28 @@ Skipped tables are always listed in the output. `--all-tables` includes them.
 `SECRET_KEY` go to `.env` (mode 600, already in the generated `.gitignore`),
 never into a Python file. `.env.example` documents every variable.
 
+## Docker
+
+Run the tool without installing anything:
+
+```bash
+docker build -t robot-rest .
+docker run --rm -v "$PWD/out:/work" --user "$(id -u):$(id -g)" robot-rest \
+    -engine postgres -ip host.docker.internal -user appuser \
+    -database shopdb -project myapi
+```
+
+The generated project lands in `./out`, owned by you rather than root.
+
+`docker-compose.yml` brings up MySQL and PostgreSQL seeded with a fixture
+schema, for running the integration suite:
+
+```bash
+docker compose up -d --wait
+docker compose run --rm tests
+docker compose down -v
+```
+
 ## Requirements
 
 - Python 3.10+

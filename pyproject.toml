@@ -58,6 +58,8 @@ dev = [
     "twine>=5",
     "bump-my-version>=0.26",
     "tomli>=2.0; python_version < '3.11'",
+    # Usada apenas para verificar que o .env gerado e lido corretamente.
+    "django-environ>=0.11",
 ]
 
 [tool.setuptools]

@@ -1,0 +1,63 @@
+# Bancos usados pelos testes de integracao.
+#
+#   docker compose up -d
+#   ROBOT_REST_TEST_MYSQL=1 ROBOT_REST_TEST_POSTGRES=1 python -m pytest
+#   docker compose down -v
+#
+# Sem essas variaveis, os testes de integracao sao pulados e o resto da suite
+# roda normalmente, sem depender de Docker.
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: shopdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: "s3cr3t#pass"
+    ports:
+      - "13306:3306"
+    volumes:
+      - ./docker/initdb/mysql.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: shopdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: "s3cr3t#pass"
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./docker/initdb/postgres.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d shopdb"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  # Roda a suite dentro de um container, na rede dos bancos.
+  # E aqui que o mysqlclient e exercitado de verdade: ele precisa da
+  # biblioteca cliente C, que nem sempre existe na maquina do desenvolvedor.
+  #
+  #   docker compose run --rm tests
+  tests:
+    build:
+      context: .
+      target: test
+    environment:
+      ROBOT_REST_TEST_MYSQL: "1"
+      ROBOT_REST_TEST_POSTGRES: "1"
+      ROBOT_REST_MYSQL_HOST: mysql
+      ROBOT_REST_MYSQL_PORT: "3306"
+      ROBOT_REST_POSTGRES_HOST: postgres
+      ROBOT_REST_POSTGRES_PORT: "5432"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
